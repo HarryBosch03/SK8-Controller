@@ -323,7 +323,7 @@ MonoBehaviour:
   uprightForce: 4
   rollingResistance: 0
   airResistance: 0
-  tangentialFriction: 20
+  tangentialFriction: 50
   distanceToGround: 0.13
   tangentOffset: -0.05
   truckDepenetrationSpring: 100
@@ -766,7 +766,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_LocalRotation: {x: 0.08490592, y: -9.424364e-10, z: 8.030833e-11, w: 0.996389}
+  m_LocalRotation: {x: 0.084905945, y: 0.000000028767225, z: -0.0000000024513604, w: 0.996389}
   m_LocalPosition: {x: 0, y: 1.366, z: -2.33}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1400,7 +1400,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2110289975}
-  m_LocalRotation: {x: 0.08490592, y: -9.424364e-10, z: 8.030833e-11, w: 0.996389}
+  m_LocalRotation: {x: 0.084905945, y: 0.000000028767225, z: -0.0000000024513604, w: 0.996389}
   m_LocalPosition: {x: 0, y: 1.2, z: -2.33}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
