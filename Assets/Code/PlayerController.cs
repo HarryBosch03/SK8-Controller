@@ -112,6 +112,7 @@ public class PlayerController : MonoBehaviour
         if (flipAction.WasPerformedThisFrame())
         {
             transform.rotation *= Quaternion.Euler(0.0f, 180.0f, 0.0f);
+            Body.AddForce(-Vector3.Project(Body.velocity, transform.forward), ForceMode.VelocityChange);
         }
 
         var cross = Vector3.Cross(transform.up, Vector3.up);
