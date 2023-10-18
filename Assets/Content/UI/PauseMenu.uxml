@@ -1,0 +1,5 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/Content/UI/DefaultStyle.uss?fileID=7433441132597879392&amp;guid=0313daa10e4f67548b067b82a3d76a94&amp;type=3#DefaultStyle" />
+    <ui:VisualElement name="background" class="background-transparent" />
+    <ui:Label text="Label" display-tooltip-when-elided="true" name="title" />
+</ui:UXML>

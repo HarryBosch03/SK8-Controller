@@ -16,76 +16,15 @@ MonoBehaviour:
   maxSteer: 3
   boardRoll: 5
   steerInputSmoothing: 0.9
-  pushDuration: 1
-  pushForceCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 69
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 0.15
-      value: 0
-      inSlope: -0
-      outSlope: 40.000004
-      tangentMode: 69
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.2
-      value: 2
-      inSlope: 40.000004
-      outSlope: -9.999999
-      tangentMode: 69
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.3
-      value: 1
-      inSlope: -9.999999
-      outSlope: 0
-      tangentMode: 69
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.6
-      value: 1
-      inSlope: -0
-      outSlope: -2.5000002
-      tangentMode: 69
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
-      value: 0
-      inSlope: -2.5000002
-      outSlope: 0
-      tangentMode: 69
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  pushForce: 0.6
-  pushMaxSpeed: 20
-  uprightForce: 16
+  acceleration: 1
+  maxSpeed: 15
+  uprightForce: 0
   rollingResistance: 0
   airResistance: 0
   tangentialFriction: 20
   distanceToGround: 0.13
-  truckWidth: 0.09
-  truckDepenetrationSpring: 100
+  truckWidth: 0.04
+  truckDepenetrationSpring: 200
   truckDepenetrationDamper: 10
   airborneVelocityAlignSpring: 1
   airborneVelocityAlignDamper: 0

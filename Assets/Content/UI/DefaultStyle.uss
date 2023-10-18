@@ -1,0 +1,13 @@
+:root {
+    -unity-font-definition: url('project://database/Assets/Content/Fonts/Assets/vertopal.asset?fileID=11400000&guid=a6133a5a8f818bb4a8b62766e4fddaa2&type=2#vertopal');
+    -unity-font: url('project://database/Assets/Content/Fonts/Files/vertopal.com_coure.otf?fileID=12800000&guid=f29da12f54acada4688a0ed081b65200&type=3#vertopal.com_coure');
+}
+
+.background-transparent {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.63);
+}

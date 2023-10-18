@@ -11,10 +11,8 @@ public class SkateboardSettings : ScriptableObject
     [Range(0.0f, 1.0f)] public float steerInputSmoothing = 0.9f;
 
     [Space]
-    public float pushDuration = 1.0f;
-    public AnimationCurve pushForceCurve = AnimationCurve.Constant(0.0f, 1.0f, 1.0f);
-    public float pushForce = 1.0f;
-    public float pushMaxSpeed = 10.0f;
+    public float acceleration = 1.0f;
+    public float maxSpeed = 20.0f;
 
     [Space]
     public float uprightForce = 4.0f;
