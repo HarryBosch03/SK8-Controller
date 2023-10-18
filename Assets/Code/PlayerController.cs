@@ -1,4 +1,5 @@
 using System;
+using System.Net.Http.Headers;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -12,11 +13,15 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private InputAction flipAction;
     [SerializeField] private InputAction resetAction;
     [SerializeField] private InputAction discreteTurnAction;
+    
+    public float steer;
 
     private Truck frontTruck;
     private Truck rearTruck;
     private float truckDistance;
     private bool reset;
+    
+    private bool isOnGround;
 
     private Vector3 startPosition;
     private Quaternion startRotation;
@@ -48,16 +53,22 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        if (pushTimer >= 0.0f && pushAction.WasPressedThisFrame())
+        if (pushTimer <= 0.0f && pushAction.WasPressedThisFrame())
         {
             pushTimer += settings.pushDuration;
         }
 
         if (resetAction.WasPressedThisFrame()) reset = true;
+
     }
 
     private void FixedUpdate()
     {
+        var tSteer = discreteTurnAction.ReadValue<float>() * settings.maxSteer;
+        steer += (tSteer - steer) * settings.steerSensitivity * Time.deltaTime;
+
+        isOnGround = false;
+        
         if (reset)
         {
             reset = false;
@@ -75,7 +86,7 @@ public class PlayerController : MonoBehaviour
         if (pushTimer > 0.0f)
         {
             var t = 1.0f - (pushTimer / settings.pushDuration);
-            var magnitude = settings.pushCurve.Evaluate(t);
+            var magnitude = settings.pushForceCurve.Evaluate(t);
             var forwardSpeed = Vector3.Dot(transform.forward, velocity);
             force += transform.forward * (settings.pushMaxSpeed - forwardSpeed) * magnitude;
             
@@ -96,6 +107,9 @@ public class PlayerController : MonoBehaviour
         rearTruck.position = center - v * truckDistance / 2.0f;
         
         transform.rotation = Quaternion.LookRotation(v, normal);
+        frontTruck.transform.rotation = frontTruck.orientation;
+        rearTruck.transform.rotation = rearTruck.orientation;
+        
         transform.position = center;
         frontTruck.transform.position = frontTruck.position;
         rearTruck.transform.position = rearTruck.position;
@@ -103,7 +117,7 @@ public class PlayerController : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        Gizmos.DrawRay(transform.position, -transform.up * settings.groundDistance);
+        Gizmos.DrawRay(transform.position, -transform.up * settings.distanceToGround);
     }
 
     public class Truck
@@ -115,6 +129,10 @@ public class PlayerController : MonoBehaviour
         public Vector3 velocity;
         public Vector3 force;
         public Vector3 normal;
+        public Quaternion orientation;
+        
+        public int sign;
+        public bool isOnGround;
 
         public Truck(PlayerController controller, string path)
         {
@@ -122,22 +140,41 @@ public class PlayerController : MonoBehaviour
             transform = controller.transform.Find(path);
             position = transform.position;
             normal = transform.up;
+
+            sign = transform.localPosition.z > 0.0f ? 1 : -1;
         }
 
         public void FixedUpdate()
         {
             position = transform.position;
 
+            ApplyFriction();
             Collide();
             Integrate();
+        }
+
+        private void ApplyFriction()
+        {
+            if (!isOnGround) return;
+            
+            orientation = controller.transform.rotation * Quaternion.Euler(Vector3.up * controller.steer * sign);
+            var right = orientation * Vector3.right;
+
+            var dot = Vector3.Dot(right, velocity);
+            velocity -= right * dot;
         }
 
         private void Collide()
         {
             var ray = new Ray(position, -transform.up);
-            var distance = controller.settings.groundDistance;
+            var distance = controller.settings.distanceToGround;
 
+            isOnGround = false;
+            
             if (!Physics.Raycast(ray, out var hit, distance)) return;
+
+            isOnGround = true;
+            controller.isOnGround = true;
             
             position = hit.point + transform.up * distance;
             normal = hit.normal;

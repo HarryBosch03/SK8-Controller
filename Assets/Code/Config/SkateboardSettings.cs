@@ -1,6 +1,4 @@
-﻿using SK8Controller.Code.Maths;
-using UnityEngine;
-
+﻿using UnityEngine;
 
 [CreateAssetMenu(menuName = "Config/Skateboard Physics Settings")]
 public class SkateboardSettings : ScriptableObject
