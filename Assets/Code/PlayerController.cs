@@ -15,6 +15,8 @@ public class PlayerController : MonoBehaviour
     private Camera mainCam;
     private bool useMouse;
     private bool isOnGround;
+    private Vector3 groundNormal;
+    private Vector3 groundPoint;
     private bool reset;
 
     private bool pushTrigger;
@@ -30,6 +32,16 @@ public class PlayerController : MonoBehaviour
     {
         GetFromHierarchy();
         mainCam = Camera.main;
+
+        var collider = transform.Find("Skateboard").GetComponent<BoxCollider>();
+        var material = new PhysicMaterial("[PROC] Skateboard");
+        material.hideFlags = HideFlags.HideAndDontSave;
+        material.bounciness = 0.0f;
+        material.dynamicFriction = 0.0f;
+        material.staticFriction = 0.0f;
+        material.bounceCombine = PhysicMaterialCombine.Multiply;
+        material.frictionCombine = PhysicMaterialCombine.Multiply;
+        collider.sharedMaterial = material;
     }
 
     private void GetFromHierarchy()
@@ -126,8 +138,24 @@ public class PlayerController : MonoBehaviour
         ApplyResistance();
         ApplyPushForce();
         ApplyUprightForces();
+        Depenetrate();
 
         if (reset) ResetBoard();
+    }
+
+    private void Depenetrate()
+    {
+        if (!isOnGround) return;
+
+        var distance = Mathf.Max(0.0f, Vector3.Dot(Body.position - groundPoint, groundNormal));
+        
+        Debug.DrawLine(Body.position, groundNormal * (settings.distanceToGround - distance));
+        
+        Body.position += groundNormal * (settings.distanceToGround - distance);
+        var dot = Vector3.Dot(Body.velocity, groundNormal);
+        Body.velocity += groundNormal * Mathf.Max(0.0f, -dot);
+        
+        Body.rotation = Quaternion.LookRotation(Body.rotation * Vector3.forward, groundNormal);
     }
 
     private void ApplyUprightForces()
@@ -167,15 +195,24 @@ public class PlayerController : MonoBehaviour
     private void UpdateTrucks()
     {
         var c = 0;
+        var normal = Vector3.zero;
+        var point = Vector3.zero;
         foreach (var e in trucks)
         {
             e.Process();
             if (!e.isOnGround) continue;
 
             c++;
+            normal += e.groundHit.normal;
+            point += e.groundHit.point;
         }
 
         isOnGround = c > 0;
+        if (isOnGround)
+        {
+            groundNormal = normal.normalized;
+            groundPoint = point / c;
+        }
     }
 
     private void ApplyResistance()
@@ -225,8 +262,6 @@ public class PlayerController : MonoBehaviour
         {
             Orient();
             LookForGround();
-            Depenetrate();
-            ApplySidewaysFriction();
         }
 
         private void Orient()
@@ -261,30 +296,6 @@ public class PlayerController : MonoBehaviour
             groundRay = new Ray(Position, -transform.up);
 
             Debug.DrawLine(groundRay.origin, groundRay.GetPoint(groundRayLength), Color.yellow);
-        }
-
-        private void Depenetrate()
-        {
-            if (!isOnGround) return;
-
-            var force = groundHit.normal * (groundRayLength - groundHit.distance) * Settings.truckDepenetrationSpring;
-
-            var velocity = controller.Body.GetPointVelocity(Position);
-            var dot = Vector3.Dot(-velocity, groundHit.normal);
-            force += groundHit.normal * dot * Settings.truckDepenetrationDamper;
-
-            controller.Body.AddForceAtPosition(force, Position, ForceMode.Acceleration);
-        }
-
-        private void ApplySidewaysFriction()
-        {
-            if (!isOnGround) return;
-
-            var velocity = controller.Body.GetPointVelocity(transform.position);
-            var dot = Vector3.Dot(transform.right, -velocity);
-            var force = transform.right * dot * Settings.tangentialFriction;
-
-            controller.Body.AddForceAtPosition(force, transform.position, ForceMode.Acceleration);
         }
 
         public void DrawGizmos()

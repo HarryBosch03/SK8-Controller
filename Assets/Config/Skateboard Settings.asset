@@ -85,7 +85,7 @@ MonoBehaviour:
   tangentialFriction: 20
   distanceToGround: 0.13
   truckWidth: 0.09
-  truckDepenetrationSpring: 100
+  truckDepenetrationSpring: 500
   truckDepenetrationDamper: 10
   airborneVelocityAlignSpring: 1
   airborneVelocityAlignDamper: 0
