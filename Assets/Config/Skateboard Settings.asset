@@ -79,7 +79,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   pushForce: 0.6
   pushMaxSpeed: 20
-  uprightForce: 0
+  uprightForce: 16
   rollingResistance: 0
   airResistance: 0
   tangentialFriction: 20
