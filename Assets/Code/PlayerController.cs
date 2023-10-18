@@ -1,5 +1,8 @@
+using System;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.HID;
 
 public class PlayerController : MonoBehaviour
 {
@@ -10,49 +13,25 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private InputAction resetAction;
     [SerializeField] private InputAction discreteTurnAction;
 
-    [SerializeField] [Range(-1.0f, 1.0f)] private float rawSteerInput;
-
-    private Camera mainCam;
-    private bool useMouse;
-    private bool isOnGround;
+    private Truck frontTruck;
+    private Truck rearTruck;
+    private float truckDistance;
     private bool reset;
 
-    private bool pushTrigger;
-    private float pushTimer;
+    private Vector3 startPosition;
+    private Quaternion startRotation;
 
-    private Truck[] trucks = new Truck[4];
-    private Transform board;
-
-    public Rigidbody Body { get; private set; }
-    public float Steer { get; private set; }
+    public float pushTimer;
 
     private void Awake()
     {
-        GetFromHierarchy();
-        mainCam = Camera.main;
-    }
-
-    private void GetFromHierarchy()
-    {
-        if (!Body) Body = GetComponent<Rigidbody>();
-
-        trucks[0] = new Truck(this, "Skateboard/Truck.Front", -1);
-        trucks[1] = new Truck(this, "Skateboard/Truck.Front", 1);
-        trucks[2] = new Truck(this, "Skateboard/Truck.Rear", -1);
-        trucks[3] = new Truck(this, "Skateboard/Truck.Rear", 1);
-        if (!board) board = transform.Find("Skateboard/Board");
+        frontTruck = new Truck(this, "Skateboard/Truck.Front");
+        rearTruck = new Truck(this, "Skateboard/Truck.Rear");
+        truckDistance = (frontTruck.position - rearTruck.position).magnitude;
     }
 
     private void OnEnable()
     {
-        if (!settings)
-        {
-            enabled = false;
-            return;
-        }
-
-        Cursor.lockState = CursorLockMode.Locked;
-
         pushAction.Enable();
         flipAction.Enable();
         resetAction.Enable();
@@ -61,8 +40,6 @@ public class PlayerController : MonoBehaviour
 
     private void OnDisable()
     {
-        Cursor.lockState = CursorLockMode.None;
-
         pushAction.Disable();
         flipAction.Disable();
         resetAction.Disable();
@@ -71,225 +48,109 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        var mouse = Mouse.current;
-        var delta = mouse.delta.ReadValue();
-        var discreteTurn = discreteTurnAction.ReadValue<float>();
-
-        if (useMouse)
+        if (pushTimer >= 0.0f && pushAction.WasPressedThisFrame())
         {
-            rawSteerInput += delta.x * settings.steerSensitivity;
-            rawSteerInput = Mathf.Clamp(rawSteerInput, -1.0f, 1.0f);
-
-            if (Mathf.Abs(discreteTurn) > 0.1f) useMouse = false;
-        }
-        else
-        {
-            rawSteerInput = discreteTurn;
-
-            if (delta.magnitude >= 0.5f) useMouse = true;
+            pushTimer += settings.pushDuration;
         }
 
-        if (resetAction.WasPerformedThisFrame())
-        {
-            reset = true;
-        }
-
-        if (pushAction?.WasPerformedThisFrame() ?? false)
-        {
-            pushTrigger = true;
-        }
-
-        if (flipAction.WasPerformedThisFrame())
-        {
-            transform.rotation *= Quaternion.Euler(0.0f, 180.0f, 0.0f);
-            Body.AddForce(-Vector3.Project(Body.velocity, transform.forward), ForceMode.VelocityChange);
-        }
-    }
-
-    public void ResetBoard()
-    {
-        reset = false;
-
-        Body.position = Vector3.up * 0.5f;
-        Body.rotation = Quaternion.identity;
-
-        Body.velocity = Vector3.zero;
-        Body.angularVelocity = Vector3.zero;
+        if (resetAction.WasPressedThisFrame()) reset = true;
     }
 
     private void FixedUpdate()
     {
-        Steer += (rawSteerInput * settings.maxSteer - Steer) * (1.0f - settings.steerInputSmoothing);
+        if (reset)
+        {
+            reset = false;
+            transform.position = Vector3.up;
+            transform.rotation = Quaternion.identity;
 
-        UpdateTrucks();
-        UpdateBoardVisuals();
-        ApplyResistance();
-        ApplyPushForce();
-        ApplyUprightForces();
+            frontTruck.velocity = Vector3.zero;
+            rearTruck.velocity = Vector3.zero;
+        }
+        
+        var position = (frontTruck.position + rearTruck.position) / 2.0f;
+        var velocity = (frontTruck.velocity + rearTruck.velocity) / 2.0f;
+        var force = Vector3.zero;
 
-        if (reset) ResetBoard();
-    }
-
-    private void ApplyUprightForces()
-    {
-        var cross = Vector3.Cross(transform.up, Vector3.up);
-        Body.AddTorque(cross * settings.uprightForce, ForceMode.Acceleration);
-    }
-
-    private void ApplyPushForce()
-    {
         if (pushTimer > 0.0f)
         {
-            if (!isOnGround)
-            {
-                pushTimer = 0.0f;
-                return;
-            }
-
-            var forwardSpeed = Vector3.Dot(transform.forward, Body.velocity);
-            var force = transform.forward * (settings.pushMaxSpeed - forwardSpeed) * settings.pushForce * settings.pushForceCurve.Evaluate(settings.pushDuration - pushTimer) / settings.pushDuration;
-            Body.AddForce(force, ForceMode.Acceleration);
-
+            var t = 1.0f - (pushTimer / settings.pushDuration);
+            var magnitude = settings.pushCurve.Evaluate(t);
+            var forwardSpeed = Vector3.Dot(transform.forward, velocity);
+            force += transform.forward * (settings.pushMaxSpeed - forwardSpeed) * magnitude;
+            
             pushTimer -= Time.deltaTime;
         }
-        else if (pushTrigger)
-        {
-            pushTrigger = false;
-            pushTimer = settings.pushDuration;
-        }
-    }
-
-    private void UpdateBoardVisuals()
-    {
-        board.localRotation = Quaternion.Euler(0.0f, 0.0f, -Steer / settings.maxSteer * settings.boardRoll);
-    }
-
-    private void UpdateTrucks()
-    {
-        var c = 0;
-        foreach (var e in trucks)
-        {
-            e.Process();
-            if (!e.isOnGround) continue;
-
-            c++;
-        }
-
-        isOnGround = c > 0;
-    }
-
-    private void ApplyResistance()
-    {
-        var velocity = Body.velocity;
-
-        var force = -velocity.normalized * velocity.sqrMagnitude * settings.airResistance;
-        force -= Vector3.Project(velocity, transform.forward) * settings.rollingResistance;
-        Body.AddForce(force, ForceMode.Acceleration);
+        
+        frontTruck.force += force;
+        rearTruck.force += force;
+        
+        frontTruck.FixedUpdate();
+        rearTruck.FixedUpdate();
+        
+        var center = (frontTruck.position + rearTruck.position) / 2.0f;
+        var normal = (frontTruck.normal + rearTruck.normal).normalized;
+        
+        var v = (frontTruck.position - center).normalized;
+        frontTruck.position = center + v * truckDistance / 2.0f;
+        rearTruck.position = center - v * truckDistance / 2.0f;
+        
+        transform.rotation = Quaternion.LookRotation(v, normal);
+        transform.position = center;
+        frontTruck.transform.position = frontTruck.position;
+        rearTruck.transform.position = rearTruck.position;
     }
 
     private void OnDrawGizmos()
     {
-        if (!settings) return;
-
-        GetFromHierarchy();
-        foreach (var e in trucks) e.DrawGizmos();
+        Gizmos.DrawRay(transform.position, -transform.up * settings.groundDistance);
     }
 
     public class Truck
     {
         public PlayerController controller;
         public Transform transform;
-        public int sign;
-        public int tangentSign;
 
-        public RaycastHit groundHit;
-        public bool isOnGround;
-        public Ray groundRay;
-        public float groundRayLength;
+        public Vector3 position;
+        public Vector3 velocity;
+        public Vector3 force;
+        public Vector3 normal;
 
-        public Vector3 Position => transform.position + transform.right * tangentSign * Settings.truckWidth;
-
-        private SkateboardSettings Settings => controller.settings;
-
-        public Truck(PlayerController controller, string path, int tangentSign)
+        public Truck(PlayerController controller, string path)
         {
             this.controller = controller;
-
             transform = controller.transform.Find(path);
-            sign = transform.localPosition.z > 0.0f ? 1 : -1;
-
-            this.tangentSign = tangentSign;
+            position = transform.position;
+            normal = transform.up;
         }
 
-        public void Process()
+        public void FixedUpdate()
         {
-            Orient();
-            LookForGround();
-            Depenetrate();
-            ApplySidewaysFriction();
+            position = transform.position;
+
+            Collide();
+            Integrate();
         }
 
-        private void Orient()
+        private void Collide()
         {
-            transform.localRotation = Quaternion.Euler(0.0f, controller.Steer * sign, 0.0f);
+            var ray = new Ray(position, -transform.up);
+            var distance = controller.settings.groundDistance;
+
+            if (!Physics.Raycast(ray, out var hit, distance)) return;
+            
+            position = hit.point + transform.up * distance;
+            normal = hit.normal;
+
+            var dot = Vector3.Dot(hit.normal, velocity);
+            velocity += hit.normal * Mathf.Max(0.0f, -dot);
         }
 
-        private void LookForGround()
+        public void Integrate()
         {
-            GetGroundRay();
-            isOnGround = Physics.Raycast(groundRay, out groundHit, groundRayLength);
-
-            isOnGround = false;
-            var results = Physics.RaycastAll(groundRay, groundRayLength);
-            var best = float.MaxValue;
-
-            foreach (var e in results)
-            {
-                if (e.transform.IsChildOf(transform)) continue;
-                if (e.distance > best) continue;
-
-                best = e.distance;
-                groundHit = e;
-                isOnGround = true;
-            }
-        }
-
-        private void GetGroundRay()
-        {
-            var localPosition = controller.transform.InverseTransformPoint(Position);
-            groundRayLength = Settings.distanceToGround - localPosition.y;
-            groundRay = new Ray(Position, -transform.up);
-
-            Debug.DrawLine(groundRay.origin, groundRay.GetPoint(groundRayLength), Color.yellow);
-        }
-
-        private void Depenetrate()
-        {
-            if (!isOnGround) return;
-
-            var force = groundHit.normal * (groundRayLength - groundHit.distance) * Settings.truckDepenetrationSpring;
-
-            var velocity = controller.Body.GetPointVelocity(Position);
-            var dot = Vector3.Dot(-velocity, groundHit.normal);
-            force += groundHit.normal * dot * Settings.truckDepenetrationDamper;
-
-            controller.Body.AddForceAtPosition(force, Position, ForceMode.Acceleration);
-        }
-
-        private void ApplySidewaysFriction()
-        {
-            if (!isOnGround) return;
-
-            var velocity = controller.Body.GetPointVelocity(transform.position);
-            var dot = Vector3.Dot(transform.right, -velocity);
-            var force = transform.right * dot * Settings.tangentialFriction;
-
-            controller.Body.AddForceAtPosition(force, transform.position, ForceMode.Acceleration);
-        }
-
-        public void DrawGizmos()
-        {
-            GetGroundRay();
+            position += velocity * Time.deltaTime;
+            velocity += force * Time.deltaTime;
+            force = Physics.gravity;
         }
     }
 }
