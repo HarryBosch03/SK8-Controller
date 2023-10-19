@@ -241,7 +241,7 @@ public class PlayerController : MonoBehaviour
             controller.transform.position += groundHit.normal * (groundRayLength - groundHit.distance);
             var point = groundHit.point;
 
-            var leverage = Position - controller.Body.worldCenterOfMass;
+            var leverage = point - controller.Body.worldCenterOfMass;
             var velocity = controller.Body.velocity + Vector3.Cross(leverage, controller.Body.angularVelocity);
             
             var dot = Vector3.Dot(groundHit.normal, velocity);
@@ -251,9 +251,9 @@ public class PlayerController : MonoBehaviour
             var appliedForce = Vector3.Project(totalForce, leverageNormal);
             var torque = Vector3.Cross(leverage, totalForce - appliedForce);
             
-            Debug.DrawRay(Position, totalForce, Color.cyan);
-            Debug.DrawRay(Position, appliedForce, Color.green);
-            Debug.DrawRay(Position, totalForce - appliedForce, Color.blue);
+            Debug.DrawRay(point, totalForce, Color.cyan);
+            Debug.DrawRay(point, appliedForce, Color.green);
+            Debug.DrawRay(point, totalForce - appliedForce, Color.blue);
             
             controller.Body.velocity += appliedForce;
             controller.Body.angularVelocity += torque;
