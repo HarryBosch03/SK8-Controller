@@ -18,7 +18,7 @@ public class PlayerController : MonoBehaviour
 
     private bool pushTrigger;
 
-    private Truck[] trucks = new Truck[4];
+    private Truck[] trucks = new Truck[2];
     private Transform board;
 
     public Rigidbody Body { get; private set; }
@@ -34,10 +34,13 @@ public class PlayerController : MonoBehaviour
     {
         if (!Body) Body = GetComponent<Rigidbody>();
 
-        trucks[0] = new Truck(this, "Skateboard/Truck.Front", -1);
-        trucks[1] = new Truck(this, "Skateboard/Truck.Front", 1);
-        trucks[2] = new Truck(this, "Skateboard/Truck.Rear", -1);
-        trucks[3] = new Truck(this, "Skateboard/Truck.Rear", 1);
+        // trucks[0] = new Truck(this, "Skateboard/Truck.Front", -1);
+        // trucks[1] = new Truck(this, "Skateboard/Truck.Front", 1);
+        // trucks[2] = new Truck(this, "Skateboard/Truck.Rear", -1);
+        // trucks[3] = new Truck(this, "Skateboard/Truck.Rear", 1);
+        
+        trucks[0] = new Truck(this, "Skateboard/Truck.Front", 0);
+        trucks[1] = new Truck(this, "Skateboard/Truck.Rear", 0);
         if (!board) board = transform.Find("Skateboard/Board");
     }
 
@@ -236,15 +239,23 @@ public class PlayerController : MonoBehaviour
         {
             if (!isOnGround) return;
             controller.transform.position += groundHit.normal * (groundRayLength - groundHit.distance);
+            var point = groundHit.point;
 
             var leverage = Position - controller.Body.worldCenterOfMass;
             var velocity = controller.Body.velocity + Vector3.Cross(leverage, controller.Body.angularVelocity);
             
             var dot = Vector3.Dot(groundHit.normal, velocity);
-            var force = groundHit.normal * Mathf.Max(0.0f, -dot);
-            var torque = Vector3.Cross(leverage, force);
-
-            controller.Body.velocity += force;
+            var totalForce = groundHit.normal * Mathf.Max(0.0f, -dot);
+            var leverageNormal = leverage.normalized;
+            
+            var appliedForce = Vector3.Project(totalForce, leverageNormal);
+            var torque = Vector3.Cross(leverage, totalForce - appliedForce);
+            
+            Debug.DrawRay(Position, totalForce, Color.cyan);
+            Debug.DrawRay(Position, appliedForce, Color.green);
+            Debug.DrawRay(Position, totalForce - appliedForce, Color.blue);
+            
+            controller.Body.velocity += appliedForce;
             controller.Body.angularVelocity += torque;
         }
 
