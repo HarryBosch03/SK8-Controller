@@ -37,11 +37,17 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _Palette:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _Roughness: 1
-    - _SpecularSize: 5
+    - _SpecularSize: 15
     m_Colors:
     - _Albedo: {r: 0.2924528, g: 0.2924528, b: 0.2924528, a: 1}
-    - _Specular: {r: 1, g: 1, b: 1, a: 0}
+    - _AlbedoHigh: {r: 0.9056604, g: 0.16369568, b: 0.089711644, a: 1}
+    - _AlbedoLow: {r: 0.46226418, g: 0.11120505, b: 0.35930938, a: 1}
+    - _Specular: {r: 0.26342094, g: 1, b: 0, a: 1}
   m_BuildTextureStacks: []
