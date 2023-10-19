@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -7,6 +8,7 @@ public class PlayerController : MonoBehaviour
 
     [SerializeField] private InputAction throttleAction;
     [SerializeField] private InputAction discreteTurnAction;
+    [SerializeField] public int logIndex;
 
     [SerializeField] [Range(-1.0f, 1.0f)] private float rawSteerInput;
 
@@ -80,7 +82,7 @@ public class PlayerController : MonoBehaviour
 
             if (delta.magnitude >= 0.5f) useMouse = true;
         }
-        
+
         if (throttleAction?.WasPerformedThisFrame() ?? false)
         {
             pushTrigger = true;
@@ -119,7 +121,7 @@ public class PlayerController : MonoBehaviour
         var throttle = throttleAction.ReadValue<float>();
         var target = Mathf.Sign(throttle) * settings.maxSpeed;
         throttle = Mathf.Abs(throttle);
-        
+
         var force = transform.forward * (target - forwardSpeed) * settings.acceleration * throttle;
         Body.AddForce(force, ForceMode.Acceleration);
     }
@@ -156,7 +158,7 @@ public class PlayerController : MonoBehaviour
     {
         if (!settings) return;
 
-        GetFromHierarchy();
+        if (!Application.isPlaying) GetFromHierarchy();
         foreach (var e in trucks) e.DrawGizmos();
     }
 
@@ -171,6 +173,8 @@ public class PlayerController : MonoBehaviour
         public bool isOnGround;
         public Ray groundRay;
         public float groundRayLength;
+
+        private List<(Vector3, Vector3, Vector3)> log = new();
 
         public Vector3 Position => transform.position + transform.right * tangentSign * Settings.truckWidth;
 
@@ -230,16 +234,20 @@ public class PlayerController : MonoBehaviour
 
         private void Depenetrate()
         {
-            if (!isOnGround) return;
+            var force = Vector3.zero;
 
-            var force = groundHit.normal * (groundRayLength - groundHit.distance) * Settings.truckDepenetrationSpring;
-            
-            var velocity = controller.Body.GetPointVelocity(Position);
-            var dot = Vector3.Dot(-velocity, groundHit.normal);
-            force += groundHit.normal * dot * Settings.truckDepenetrationDamper;
-            controller.Body.AddForceAtPosition(force, Position);
+            if (isOnGround)
+            {
+                force = groundHit.normal * (groundRayLength - groundHit.distance) * Settings.truckDepenetrationSpring;
 
-            Debug.DrawRay(transform.position, force, Color.magenta);
+                var velocity = controller.Body.GetPointVelocity(Position);
+                var dot = Vector3.Dot(-velocity, groundHit.normal);
+                force += groundHit.normal * dot * Settings.truckDepenetrationDamper;
+                controller.Body.AddForceAtPosition(force, Position);
+            }
+
+            log.Add((controller.transform.position, Position, force));
+            if (log.Count > 5000) log.RemoveAt(0);
         }
 
         private void ApplySidewaysFriction()
@@ -249,12 +257,24 @@ public class PlayerController : MonoBehaviour
             var velocity = controller.Body.GetPointVelocity(Position);
             var dot = Vector3.Dot(transform.right, -velocity);
             var force = transform.right * dot * Settings.tangentialFriction;
-            
+
             controller.Body.AddForceAtPosition(force, Position);
         }
 
         public void DrawGizmos()
         {
+            if (log.Count > 0)
+            {
+                var i = log.Count - 1 - controller.logIndex;
+                if (i < 0) i = 0;
+                if (i >= log.Count) i = log.Count - 1;
+
+                var e = log[i];
+                Gizmos.color = Color.magenta;
+                Gizmos.DrawLine(e.Item1, e.Item2);
+                Gizmos.DrawRay(e.Item2, e.Item3);
+            }
+
             GetGroundRay();
         }
     }

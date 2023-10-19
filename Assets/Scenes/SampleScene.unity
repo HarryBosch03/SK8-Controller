@@ -381,6 +381,7 @@ MonoBehaviour:
       m_Action: Discrete Turn
       m_Flags: 0
     m_Flags: 0
+  logIndex: 0
   rawSteerInput: 0
 --- !u!54 &107361010
 Rigidbody:
@@ -392,7 +393,7 @@ Rigidbody:
   serializedVersion: 2
   m_Mass: 1
   m_Drag: 0
-  m_AngularDrag: 10
+  m_AngularDrag: 1
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
