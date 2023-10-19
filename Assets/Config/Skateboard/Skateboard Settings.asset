@@ -18,14 +18,18 @@ MonoBehaviour:
   steerInputSmoothing: 0.9
   acceleration: 1
   maxSpeed: 20
-  uprightSpring: 0.2
-  uprightDamping: 0.02
+  leanForce: 0.2
+  leanDamping: 0.02
   rollingResistance: 0
   airResistance: 0
   tangentialFriction: 20
-  distanceToGround: 0.13
-  truckWidth: 0.09
+  distanceToGround: 0.18
+  truckOffset: {x: 0.12, y: 0.02, z: 0.33}
   truckDepenetrationSpring: 800
   truckDepenetrationDamper: 150
+  wheelRadius: 0.119059
+  flipCheckDistance: 0.1
+  jumpCooldown: 1
+  flipJumpForce: 4
   airborneVelocityAlignSpring: 1
   airborneVelocityAlignDamper: 0

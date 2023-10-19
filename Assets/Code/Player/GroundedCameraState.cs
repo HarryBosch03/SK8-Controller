@@ -2,31 +2,26 @@ using UnityEngine;
 
 namespace SK8Controller.Player
 {
-    [System.Serializable]
-    public class GroundedCameraSettings : CameraState
+    [CreateAssetMenu(menuName = "Config/Camera/Grounded Camera State")]
+    public class GroundedCameraState : CameraState
     {
-        [SerializeField] private Vector3 cameraOffset = Vector3.back;
-        [SerializeField] private Vector3 lookOffset;
-        [SerializeField] private float absoluteVerticalOffset;
-        [SerializeField] private float fov = 40.0f;
+        public Vector3 cameraOffset = Vector3.back;
+        public Vector3 lookOffset;
+        public float absoluteVerticalOffset;
+        public float fov = 40.0f;
 
-        [SerializeField] private float spring, damper;
+         public float spring, damper;
 
-        [SerializeField] private float dollyResponse;
-        [SerializeField][Range(0.0f, 1.0f)] private float dollySmoothing;
-        [SerializeField] private float dollyFov;
-        [SerializeField] private Vector3 dollyOffset;
-        [SerializeField][Range(0.0f, 1.0f)] private float dolly;
+         public float dollyResponse;
+        [Range(0.0f, 1.0f)] public float dollySmoothing;
+         public float dollyFov;
+         public Vector3 dollyOffset;
+        [Range(0.0f, 1.0f)] public float dolly;
         
         private Matrix4x4 basis;
 
         public override void Tick(SkateboardCamera camera)
         {
-            if (!camera.target.isOnGround)
-            {
-                camera.ChangeState();
-            }
-            
             basis = camera.target.transform.localToWorldMatrix;
             
             camera.targetPosition = basis.MultiplyPoint(cameraOffset) + Vector3.up * absoluteVerticalOffset;

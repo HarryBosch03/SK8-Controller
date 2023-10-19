@@ -7,6 +7,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private SkateboardSettings settings;
 
     [SerializeField] private InputAction throttleAction;
+    [SerializeField] private InputAction leanAction;
+    [SerializeField] private InputAction jumpAction;
     [SerializeField] private InputAction discreteTurnAction;
     [SerializeField] public int logIndex;
 
@@ -14,8 +16,13 @@ public class PlayerController : MonoBehaviour
 
     private Camera mainCam;
     private bool useMouse;
-    private bool isOnGround;
+    public bool isOnGround;
     private int wheelsOnGround;
+    private Vector2 leanInput;
+
+    public bool jump;
+    public bool flipped;
+    public float jumpTimer;
 
     private bool pushTrigger;
 
@@ -35,10 +42,10 @@ public class PlayerController : MonoBehaviour
     {
         if (!Body) Body = GetComponent<Rigidbody>();
 
-        trucks[0] = new Truck(this, "Skateboard/Truck.Front", -1);
-        trucks[1] = new Truck(this, "Skateboard/Truck.Front", 1);
-        trucks[2] = new Truck(this, "Skateboard/Truck.Rear", -1);
-        trucks[3] = new Truck(this, "Skateboard/Truck.Rear", 1);
+        trucks[0] = new Truck(this, "Skateboard/Truck.Front/Wheel.FL", -1, 1);
+        trucks[1] = new Truck(this, "Skateboard/Truck.Front/Wheel.FR", 1, 1);
+        trucks[2] = new Truck(this, "Skateboard/Truck.Rear/Wheel.BL", -1, -1);
+        trucks[3] = new Truck(this, "Skateboard/Truck.Rear/Wheel.BR", 1, -1);
         if (!board) board = transform.Find("Skateboard/Board");
     }
 
@@ -53,6 +60,8 @@ public class PlayerController : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
 
         throttleAction.Enable();
+        leanAction.Enable();
+        jumpAction.Enable();
         discreteTurnAction.Enable();
     }
 
@@ -61,6 +70,8 @@ public class PlayerController : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
 
         throttleAction.Disable();
+        leanAction.Disable();
+        jumpAction.Disable();
         discreteTurnAction.Disable();
     }
 
@@ -88,6 +99,9 @@ public class PlayerController : MonoBehaviour
         {
             pushTrigger = true;
         }
+
+        leanInput = leanAction.ReadValue<Vector2>();
+        if (jumpAction.WasPressedThisFrame()) jump = true;
     }
 
     public void ResetBoard()
@@ -103,19 +117,52 @@ public class PlayerController : MonoBehaviour
     {
         Steer += (rawSteerInput * settings.maxSteer - Steer) * (1.0f - settings.steerInputSmoothing);
 
+        CheckIfFlipped();
         UpdateTrucks();
         UpdateBoardVisuals();
         ApplyResistance();
         ApplyPushForce();
-        ApplyUprightForces();
+        ApplyLeanForces();
     }
 
-    private void ApplyUprightForces()
+    private void CheckIfFlipped()
+    {
+        var ray = new Ray(transform.position, transform.up);
+
+        flipped = false;
+        var hit = new RaycastHit();
+        foreach (var e in Physics.RaycastAll(ray, settings.flipCheckDistance))
+        {
+            if (e.collider.transform.IsChildOf(transform)) continue;
+            flipped = true;
+            hit = e;
+            break;
+        }
+
+        Debug.Log(hit.transform, hit.transform);
+
+        var jump = this.jump;
+        this.jump = false;
+
+        if (!flipped)
+        {
+            jumpTimer = 0.0f;
+            return;
+        }
+
+        jumpTimer += Time.deltaTime;
+        if (jumpTimer > settings.jumpCooldown && jump)
+        {
+            Body.AddForce(hit.normal * settings.flipJumpForce, ForceMode.Impulse);
+        }
+    }
+
+    private void ApplyLeanForces()
     {
         if (isOnGround) return;
-        
-        var cross = Vector3.Cross(transform.up, Vector3.up);
-        var torque = cross * settings.uprightSpring - Body.angularVelocity * settings.uprightDamping;
+
+        var lean = transform.forward * leanInput.x + transform.right * leanInput.y;
+        var torque = lean * settings.leanForce - Body.angularVelocity * settings.leanDamping;
         Body.AddTorque(torque);
     }
 
@@ -165,34 +212,37 @@ public class PlayerController : MonoBehaviour
 
         if (!Application.isPlaying) GetFromHierarchy();
         foreach (var e in trucks) e.DrawGizmos();
+
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawRay(transform.position, transform.up * settings.flipCheckDistance);
     }
 
     public class Truck
     {
         public PlayerController controller;
         public Transform transform;
-        public int sign;
-        public int tangentSign;
 
         public RaycastHit groundHit;
         public bool isOnGround;
         public Ray groundRay;
         public float groundRayLength;
+        public int xSign, zSign;
+        public float rotation;
 
         private List<(Vector3, Vector3, Vector3)> log = new();
 
-        public Vector3 Position => transform.position + transform.right * tangentSign * Settings.truckWidth;
+        public Vector3 Position => controller.transform.TransformPoint(Settings.truckOffset.x * xSign, Settings.truckOffset.y, Settings.truckOffset.z * zSign);
 
         private SkateboardSettings Settings => controller.settings;
 
-        public Truck(PlayerController controller, string path, int tangentSign)
+        public Truck(PlayerController controller, string path, int xSign, int zSign)
         {
             this.controller = controller;
 
             transform = controller.transform.Find(path);
-            sign = transform.localPosition.z > 0.0f ? 1 : -1;
 
-            this.tangentSign = tangentSign;
+            this.xSign = xSign > 0 ? 1 : -1;
+            this.zSign = zSign > 0 ? 1 : -1;
         }
 
         public void Process()
@@ -205,7 +255,15 @@ public class PlayerController : MonoBehaviour
 
         private void Orient()
         {
-            transform.localRotation = Quaternion.Euler(0.0f, controller.Steer * sign, 0.0f);
+            if (isOnGround)
+            {
+                var velocity = controller.Body.GetPointVelocity(groundHit.point);
+                var speed = Vector3.Dot(velocity, controller.transform.forward);
+                rotation += speed / Settings.wheelRadius * Time.deltaTime * Mathf.Rad2Deg;
+            }
+
+            rotation %= 360.0f;
+            transform.localRotation = Quaternion.Euler(rotation, controller.Steer * zSign, 0.0f);
         }
 
         private void LookForGround()
@@ -230,9 +288,8 @@ public class PlayerController : MonoBehaviour
 
         private void GetGroundRay()
         {
-            var localPosition = controller.transform.InverseTransformPoint(Position);
-            groundRayLength = Settings.distanceToGround - localPosition.y;
-            groundRay = new Ray(Position, -transform.up);
+            groundRayLength = Settings.distanceToGround - Settings.truckOffset.y;
+            groundRay = new Ray(Position, -controller.transform.up);
         }
 
         private void Depenetrate()
@@ -244,12 +301,12 @@ public class PlayerController : MonoBehaviour
                 var point = groundHit.point;
                 var normal = groundHit.normal;
                 force += Vector3.Project(groundHit.normal * (groundRayLength - groundHit.distance), normal) * Settings.truckDepenetrationSpring;
-                
+
                 var velocity = controller.Body.GetPointVelocity(point);
                 var dot = Vector3.Dot(velocity, normal);
                 force += normal * Mathf.Max(0.0f, -dot) * Settings.truckDepenetrationDamper;
                 controller.Body.AddForceAtPosition(force / 8, point);
-                
+
                 Debug.DrawLine(Position, point, Color.red);
             }
 
@@ -284,7 +341,7 @@ public class PlayerController : MonoBehaviour
 
             GetGroundRay();
             Gizmos.color = Color.yellow;
-            Gizmos.DrawRay(groundRay.origin, groundRay.GetPoint(Settings.distanceToGround));
+            Gizmos.DrawLine(groundRay.origin, groundRay.GetPoint(Settings.distanceToGround));
         }
     }
 }

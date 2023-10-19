@@ -1,39 +1,9 @@
 fileFormatVersion: 2
-guid: 5ed6415899b68a04a975a40938abe5ff
+guid: 51cf962aea56de647bdd0a7cc0cc54d3
 ModelImporter:
   serializedVersion: 21300
   internalIDToNameTable: []
-  externalObjects:
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Accent
-    second: {fileID: 2100000, guid: 3ecf5da71fc875147982bb734e52ea7c, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Button
-    second: {fileID: 2100000, guid: 8817c3d566d9a9345a3338e6eceaa5fa, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Emissive
-    second: {fileID: 2100000, guid: 640aa6308c3d95e4884300be84b4b3bd, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Metal
-    second: {fileID: 2100000, guid: 5c7c318dcf28bae408c58dec59ea00c8, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Primary
-    second: {fileID: 2100000, guid: d12a4eb35e3b73943888d76fddc4a898, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Rubber
-    second: {fileID: 2100000, guid: ebf839da6e6223741ae484c0ce9f2533, type: 2}
+  externalObjects: {}
   materials:
     materialImportMode: 2
     materialName: 0

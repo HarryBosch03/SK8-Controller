@@ -1,28 +1,30 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace SK8Controller.Player
 {
     public class SkateboardCamera : MonoBehaviour
     {
-        [SerializeField] private Vector3 cameraOffset = Vector3.back;
-        [SerializeField] private Vector3 lookOffset;
-        [SerializeField] private float absoluteVerticalOffset;
-        [SerializeField] private float fov = 40.0f;
-
-        [SerializeField] private float spring, damper;
+        public GroundedCameraState groundedCameraState;
+        public AirborneCameraState airborneCameraState;
         [SerializeField] private float warpDistance;
 
-        [SerializeField] private float dollyResponse;
-        [SerializeField][Range(0.0f, 1.0f)] private float dollySmoothing;
-        [SerializeField] private float dollyFov;
-        [SerializeField] private Vector3 dollyOffset;
-        [SerializeField][Range(0.0f, 1.0f)] private float dolly;
+        [HideInInspector] public CameraState currentState;
+        [HideInInspector] public PlayerController target;
+
+        [HideInInspector] public Rigidbody cameraBody;
+
+        [HideInInspector] public Vector3 targetPosition;
+        [HideInInspector] public Vector3 targetVelocity;
+        [HideInInspector] public float targetFieldOfView;
+        [HideInInspector] public Vector3 lookAtTarget;
         
-        private PlayerController target;
         private Camera cam;
         private Matrix4x4 basis;
 
-        private Rigidbody cameraBody;
+        public Vector3 Position => cameraBody.position;
+        public Quaternion Rotation => cameraBody.rotation;
 
         private void OnEnable()
         {
@@ -33,43 +35,48 @@ namespace SK8Controller.Player
             cameraBody.mass = 0.0f;
             cameraBody.constraints = RigidbodyConstraints.FreezeRotation;
             cameraBody.transform.SetParent(null);
+
+            ChangeState(groundedCameraState);
         }
 
         private void FixedUpdate()
         {
-            basis = target.transform.localToWorldMatrix;
-            
-            var tPos = basis.MultiplyPoint(cameraOffset) + Vector3.up * absoluteVerticalOffset;
-            var tVel = target.Body.velocity;
-            var tFov = fov;
-
-            if ((tPos - cameraBody.position).magnitude > warpDistance)
+            switch (target.isOnGround)
             {
-                cameraBody.position = tPos;
+                case true when currentState is AirborneCameraState:
+                    ChangeState(groundedCameraState);
+                    break;
+                case false when currentState is GroundedCameraState:
+                    ChangeState(airborneCameraState);
+                    break;
             }
 
+            if (currentState) currentState.Tick(this);
+        }
+
+        public void ChangeState(CameraState newState)
+        {
+            if (currentState) currentState.Exit(this);
+            currentState = newState;
+            if (currentState) currentState.Enter(this);
+        }
+
+        public void Move(float spring, float damper)
+        {
+            if ((targetPosition - cameraBody.position).magnitude > warpDistance)
+            {
+                cameraBody.position = targetPosition;
+            }
             
-            ApplyDolly(ref tPos, ref tFov);
-            
-            var force = (tPos - cameraBody.position) * spring + (tVel - cameraBody.velocity) * damper;
-            var lookPosition = basis.MultiplyPoint(lookOffset);
-            var rotation = Quaternion.LookRotation(lookPosition - cameraBody.position);
+            var force = (targetPosition - cameraBody.position) * spring + (targetVelocity - cameraBody.velocity) * damper;
+            var rotation = Quaternion.LookRotation(lookAtTarget - cameraBody.position);
 
             cameraBody.AddForce(force, ForceMode.Acceleration);
             cameraBody.rotation = rotation;
             
             cam.transform.position = cameraBody.position;
             cam.transform.rotation = cameraBody.rotation;
-            cam.fieldOfView = tFov;
-        }
-
-        private void ApplyDolly(ref Vector3 tPos, ref float tFov)
-        {
-            var forwardSpeed = Mathf.Max(0.0f, Vector3.Dot(target.transform.forward, target.Body.velocity));
-            dolly = Mathf.Lerp(Mathf.Clamp01(forwardSpeed * dollyResponse), dolly, dollySmoothing);
-
-            tFov = Mathf.Lerp(tFov, dollyFov, dolly);
-            tPos += target.Body.rotation * dollyOffset * dolly;
+            cam.fieldOfView = targetFieldOfView;
         }
     }
 }
