@@ -1,5 +1,6 @@
 ﻿using SK8Controller.Code.Maths;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 
 [CreateAssetMenu(menuName = "Config/Skateboard Physics Settings")]
@@ -14,8 +15,8 @@ public class SkateboardSettings : ScriptableObject
     public float acceleration = 1.0f;
     public float maxSpeed = 20.0f;
 
-    [Space]
-    public float uprightForce = 4.0f;
+    public float uprightSpring = 4.0f;
+    public float uprightDamping = 4.0f;
     [Range(0.0f, 50.0f)] public float rollingResistance;
     [Range(0.0f, 50.0f)] public float airResistance;
     [Range(0.0f, 50.0f)] public float tangentialFriction = 20.0f;

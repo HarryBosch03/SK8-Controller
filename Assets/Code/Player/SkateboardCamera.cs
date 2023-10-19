@@ -6,6 +6,7 @@ namespace SK8Controller.Player
     {
         [SerializeField] private Vector3 cameraOffset = Vector3.back;
         [SerializeField] private Vector3 lookOffset;
+        [SerializeField] private float absoluteVerticalOffset;
         [SerializeField] private float fov = 40.0f;
 
         [SerializeField] private float spring, damper;
@@ -19,6 +20,7 @@ namespace SK8Controller.Player
         
         private PlayerController target;
         private Camera cam;
+        private Matrix4x4 basis;
 
         private Rigidbody cameraBody;
 
@@ -35,7 +37,9 @@ namespace SK8Controller.Player
 
         private void FixedUpdate()
         {
-            var tPos = target.transform.TransformPoint(cameraOffset);
+            basis = target.transform.localToWorldMatrix;
+            
+            var tPos = basis.MultiplyPoint(cameraOffset) + Vector3.up * absoluteVerticalOffset;
             var tVel = target.Body.velocity;
             var tFov = fov;
 
@@ -44,10 +48,11 @@ namespace SK8Controller.Player
                 cameraBody.position = tPos;
             }
 
+            
             ApplyDolly(ref tPos, ref tFov);
             
             var force = (tPos - cameraBody.position) * spring + (tVel - cameraBody.velocity) * damper;
-            var lookPosition = target.transform.TransformPoint(lookOffset);
+            var lookPosition = basis.MultiplyPoint(lookOffset);
             var rotation = Quaternion.LookRotation(lookPosition - cameraBody.position);
 
             cameraBody.AddForce(force, ForceMode.Acceleration);

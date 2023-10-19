@@ -15,6 +15,7 @@ public class PlayerController : MonoBehaviour
     private Camera mainCam;
     private bool useMouse;
     private bool isOnGround;
+    private int wheelsOnGround;
 
     private bool pushTrigger;
 
@@ -111,8 +112,11 @@ public class PlayerController : MonoBehaviour
 
     private void ApplyUprightForces()
     {
+        if (isOnGround) return;
+        
         var cross = Vector3.Cross(transform.up, Vector3.up);
-        Body.AddTorque(cross * settings.uprightForce);
+        var torque = cross * settings.uprightSpring - Body.angularVelocity * settings.uprightDamping;
+        Body.AddTorque(torque);
     }
 
     private void ApplyPushForce()
@@ -123,6 +127,7 @@ public class PlayerController : MonoBehaviour
         throttle = Mathf.Abs(throttle);
 
         var force = transform.forward * (target - forwardSpeed) * settings.acceleration * throttle;
+        force *= wheelsOnGround / 4.0f;
         Body.AddForce(force, ForceMode.Acceleration);
     }
 
@@ -133,16 +138,16 @@ public class PlayerController : MonoBehaviour
 
     private void UpdateTrucks()
     {
-        var c = 0;
+        wheelsOnGround = 0;
         foreach (var e in trucks)
         {
             e.Process();
             if (!e.isOnGround) continue;
 
-            c++;
+            wheelsOnGround++;
         }
 
-        isOnGround = c > 0;
+        isOnGround = wheelsOnGround > 0;
     }
 
     private void ApplyResistance()
@@ -228,8 +233,6 @@ public class PlayerController : MonoBehaviour
             var localPosition = controller.transform.InverseTransformPoint(Position);
             groundRayLength = Settings.distanceToGround - localPosition.y;
             groundRay = new Ray(Position, -transform.up);
-
-            Debug.DrawLine(groundRay.origin, groundRay.GetPoint(groundRayLength), Color.yellow);
         }
 
         private void Depenetrate()
@@ -238,12 +241,16 @@ public class PlayerController : MonoBehaviour
 
             if (isOnGround)
             {
-                force = groundHit.normal * (groundRayLength - groundHit.distance) * Settings.truckDepenetrationSpring;
-
-                var velocity = controller.Body.GetPointVelocity(Position);
-                var dot = Vector3.Dot(-velocity, groundHit.normal);
-                force += groundHit.normal * dot * Settings.truckDepenetrationDamper;
-                controller.Body.AddForceAtPosition(force, Position);
+                var point = groundHit.point;
+                var normal = groundHit.normal;
+                force += Vector3.Project(groundHit.normal * (groundRayLength - groundHit.distance), normal) * Settings.truckDepenetrationSpring;
+                
+                var velocity = controller.Body.GetPointVelocity(point);
+                var dot = Vector3.Dot(velocity, normal);
+                force += normal * Mathf.Max(0.0f, -dot) * Settings.truckDepenetrationDamper;
+                controller.Body.AddForceAtPosition(force / 8, point);
+                
+                Debug.DrawLine(Position, point, Color.red);
             }
 
             log.Add((controller.transform.position, Position, force));
@@ -276,6 +283,8 @@ public class PlayerController : MonoBehaviour
             }
 
             GetGroundRay();
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawRay(groundRay.origin, groundRay.GetPoint(Settings.distanceToGround));
         }
     }
 }

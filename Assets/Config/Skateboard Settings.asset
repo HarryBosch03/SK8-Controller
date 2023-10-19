@@ -17,14 +17,15 @@ MonoBehaviour:
   boardRoll: 5
   steerInputSmoothing: 0.9
   acceleration: 1
-  maxSpeed: 15
-  uprightForce: 0
+  maxSpeed: 20
+  uprightSpring: 0.2
+  uprightDamping: 0.02
   rollingResistance: 0
   airResistance: 0
   tangentialFriction: 20
   distanceToGround: 0.13
-  truckWidth: 0.04
-  truckDepenetrationSpring: 500
-  truckDepenetrationDamper: 10
+  truckWidth: 0.09
+  truckDepenetrationSpring: 800
+  truckDepenetrationDamper: 150
   airborneVelocityAlignSpring: 1
   airborneVelocityAlignDamper: 0
