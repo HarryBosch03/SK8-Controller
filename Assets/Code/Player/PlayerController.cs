@@ -234,20 +234,18 @@ public class PlayerController : MonoBehaviour
 
         private void Depenetrate()
         {
-            var force = Vector3.zero;
+            if (!isOnGround) return;
+            controller.transform.position += groundHit.normal * (groundRayLength - groundHit.distance);
 
-            if (isOnGround)
-            {
-                force = groundHit.normal * (groundRayLength - groundHit.distance) * Settings.truckDepenetrationSpring;
+            var leverage = Position - controller.Body.worldCenterOfMass;
+            var velocity = controller.Body.velocity + Vector3.Cross(leverage, controller.Body.angularVelocity);
+            
+            var dot = Vector3.Dot(groundHit.normal, velocity);
+            var force = groundHit.normal * Mathf.Max(0.0f, -dot);
+            var torque = Vector3.Cross(leverage, force);
 
-                var velocity = controller.Body.GetPointVelocity(Position);
-                var dot = Vector3.Dot(-velocity, groundHit.normal);
-                force += groundHit.normal * dot * Settings.truckDepenetrationDamper;
-                controller.Body.AddForceAtPosition(force, Position);
-            }
-
-            log.Add((controller.transform.position, Position, force));
-            if (log.Count > 5000) log.RemoveAt(0);
+            controller.Body.velocity += force;
+            controller.Body.angularVelocity += torque;
         }
 
         private void ApplySidewaysFriction()
