@@ -55,7 +55,9 @@ namespace SK8Controller
                     "| Control_Type     | Keyboard         | Controller        |\n" +
                     "| Throttle_Forward | W                | Joy_Right_Trigger |\n" +
                     "| Throttle_Back    | S                | Joy_Right_Bumper  |\n" +
-                    "| Steer            | Mouse_Movement_X | Joy_Stick_Left    |\n" +
+                    "| Steer            | Mouse_Movement   | Joy_Stick         |\n" +
+                    "| Lean             | Mouse_Movement   | Joy_Stick         |\n" +
+                    "| Jump             | F                | Joy_North_Face    |\n" +
                     "-----------------------------------------------------------\n",
                 options = new List<(string, Action<PauseMenu>)>()
                 {
@@ -153,6 +155,8 @@ namespace SK8Controller
             group.interactable = open;
             group.blocksRaycasts = open;
 
+            Time.timeScale = open ? 0.0f : 1.0f;
+            
             if (page == null) return;
 
             var sb = new StringBuilder(prepend);
