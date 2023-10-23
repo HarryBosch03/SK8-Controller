@@ -2,11 +2,14 @@ Shader "Unlit/PaletteShader"
 {
     Properties
     {
-        _Low("Color Low", Color) = (0, 0, 0, 1)
-        _High("Color High", Color) = (1, 1, 1, 1)
-        _Steps("Palette Steps", int) = 16
-        _Brightness("Brightness", float) = 0
-        _Contrast("Contrast", float) = 0
+        _Palette("Palette", 2D) = "white" {}
+        _Brightness("Brightness", Range(-1, 1)) = 0
+        _Contrast("Contrast", Range(-1, 1)) = 0
+        _Slope("Slope", float) = 0
+        [Toggle]_FalseColor("False Color", int) = 0
+        _Downscale("Dither Downscale", int) = 2
+        _BluePoint("Blue Point", Color) = (0, 0, 1)
+        _Passthrough("Passthrough", Range(0.0, 1.0)) = 0.0
     }
     SubShader
     {
@@ -51,16 +54,15 @@ Shader "Unlit/PaletteShader"
                 return output;
             }
 
-            float4 _Low;
-            float4 _High;
-            int _Steps;
+            TEXTURE2D(_Palette);
+            SAMPLER(sampler_Palette);
+            float4 _Palette_TexelSize;
             
             float _Brightness;
             float _Contrast;
 
-            float Unity_Dither_float(float In, float4 ScreenPosition)
+            float Unity_Dither_float(float In, uint2 uv)
             {
-                float2 uv = ScreenPosition.xy * _ScreenParams.xy;
                 float DITHER_THRESHOLDS[16] =
                 {
                     1.0 / 17.0, 9.0 / 17.0, 3.0 / 17.0, 11.0 / 17.0,
@@ -108,16 +110,45 @@ Shader "Unlit/PaletteShader"
                 );
             }
 
+            float smootherstep(float x)
+            {
+                return x * x * x * (x * (6.0f * x - 15.0f) + 10.0f);
+            }
+            
+            int _FalseColor;
+            float _Slope;
+            int _Downscale;
+            float3 _BluePoint;
+            float _Passthrough;
+
             half4 frag(Varyings input) : SV_Target
             {
-                float3 scene = SampleSceneColor(input.uv);
-                float2 paletteUV = floor(scene.rg * _Steps) / _Steps;
-                float index = Unity_Dither_float(scene.r * _Steps, float4(input.screenPosition.xy / input.screenPosition.w, 0, 0)) / _Steps;
+                clip(input.uv.x - _Passthrough);
+                
+                int2 steps = _Palette_TexelSize.zw;
+                int2 downscale = _ScreenParams.xy / _Downscale; 
+                float2 uv = floor(input.uv * downscale) / downscale;
+                
+                float3 scene = SampleSceneColor(uv);
+                float lightness = dot(scene, float3(0.299, 0.587, 0.144));
+                lightness = (lightness + _Brightness) * (1 + _Contrast);
+                lightness = pow(max(0.0, lightness), 1 / _Slope);
+                
+                float blueness = pow(dot(normalize(_BluePoint), normalize(scene)) * 0.5 + 0.5, 4.0);
+                float2 paletteUV = float2(blueness, lightness);
 
-                float3 low = rgb2okLab(pow(_Low, 2.2));
-                float3 high = rgb2okLab(pow(_High, 2.2));
+                uint2 ditherUV = input.uv * (_ScreenParams.xy / _Downscale);
+                float2 index;
+                index.x = Unity_Dither_float(paletteUV.x * steps.x, ditherUV) / steps.x;
+                index.y = Unity_Dither_float(paletteUV.y * steps.y, ditherUV) / steps.y;
 
-                float3 col = pow(okLab2rgb(lerp(low, high, index)), 1 / 2.2);
+                float3 col = SAMPLE_TEXTURE2D(_Palette, sampler_Palette, index);
+
+                if (_FalseColor)
+                {
+                    if (paletteUV.x >= 1.0) col = float3(0, 1, 0);
+                    if (paletteUV.x <= 0.0) col = float3(1, 0, 0);
+                }
 
                 return float4(col, 1);
             }

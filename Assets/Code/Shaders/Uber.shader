@@ -32,7 +32,7 @@ Shader "Uber"
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
-                float3 normal : NORMAL;
+                float4 normal : NORMAL;
                 float3 tangent : TANGENT;
                 float4 color : COLOR;
             };
@@ -41,7 +41,7 @@ Shader "Uber"
             {
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
-                float3 normalWS : NORMAL_WS;
+                float3 normalOS : NORMAL_WS;
                 float3 position : POSITION_WS;
                 float4 screenPos : SCREEN_POS;
                 float4 color : COLOR;
@@ -53,12 +53,13 @@ Shader "Uber"
             Varyings vert(Attributes input)
             {
                 Varyings output;
-                output.vertex = TransformObjectToHClip(input.vertex.xyz);
 
+                output.vertex = TransformObjectToHClip(input.vertex.xyz);
                 output.vertex.xy = (round((output.vertex.xy / output.vertex.w) * _Jitter) / _Jitter) * output.vertex.w;
 
                 output.uv = input.uv;
-                output.normalWS = TransformObjectToWorldNormal(input.normal);
+                output.normalOS = input.normal;
+                float3 normalWS = TransformObjectToWorldNormal(input.normal);
 
                 float3 worldScale = float3
                 (
@@ -68,14 +69,14 @@ Shader "Uber"
                 );
                 output.position = input.vertex * worldScale;
 
-                output.attenuation = dot(output.normalWS, _MainLightPosition);
+                output.attenuation = saturate(dot(normalWS, normalize(_MainLightPosition)));
                 output.color = input.color;
                 output.screenPos = ComputeScreenPos(output.vertex);
 
                 return output;
             }
 
-            static const float3 Ambient = float3(0.212, 0.227, 0.259) * 0.5;
+            static const float3 Ambient = float3(0.212, 0.227, 0.259) * 0.01;
 
             float4 _BaseColor;
 
@@ -102,16 +103,16 @@ Shader "Uber"
             
             half4 frag(Varyings input) : SV_Target
             {
-                float3 triplanarWeights = abs(input.normalWS);
+                float3 triplanarWeights = abs(normalize(input.normalOS));
                 float2 uv = lerp
                 (
                     input.uv,
                     input.position.zy * triplanarWeights.x +
-                    input.position.xz * triplanarWeights.y +
-                    input.position.xy * triplanarWeights.z,
+                    input.position.zx * triplanarWeights.y +
+                    input.position.xy * triplanarWeights.z, 
                     _Triplanar
                 );
-
+                
                 half4 albedo = lerp(1.0, SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv * _MainTex_ST.xy + _MainTex_ST.zw), _MainTexBlend) * _BaseColor * input.color;
                 half3 decal = albedo.rgb;
                 ApplyDecalToBaseColor(input.vertex, decal);
@@ -122,7 +123,7 @@ Shader "Uber"
                 color.a = albedo.a;
                 
                 color.rgb += albedo * Ambient;
-                color.rgb += albedo * saturate(input.attenuation) * _MainLightColor;
+                color.rgb += albedo * input.attenuation * _MainLightColor;
 
                 clip(Unity_Dither_float(color.a, float4(input.screenPos.xy / input.screenPos.w, 0, 0)));
 

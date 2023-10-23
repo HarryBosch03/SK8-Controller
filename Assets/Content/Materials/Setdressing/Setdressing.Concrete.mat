@@ -101,11 +101,13 @@ Material:
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
+    - _DitherDownscale: 2
     - _DstBlend: 0
     - _EnvironmentReflections: 1
     - _GlossMapScale: 1
     - _Glossiness: 0.19999999
     - _GlossyReflections: 1
+    - _Imposter: 0
     - _MainTexBlend: 1
     - _Metallic: 0
     - _Mode: 0

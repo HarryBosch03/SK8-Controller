@@ -134,8 +134,6 @@ public class PlayerController : MonoBehaviour
             break;
         }
 
-        Debug.Log(hit.transform, hit.transform);
-
         var jump = this.jump;
         this.jump = false;
 

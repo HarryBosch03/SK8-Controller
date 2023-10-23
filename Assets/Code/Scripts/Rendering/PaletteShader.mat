@@ -10,7 +10,8 @@ Material:
   m_Name: PaletteShader
   m_Shader: {fileID: 4800000, guid: f393cf3a7a7e4cbfaf74ae4cda263d3d, type: 3}
   m_ValidKeywords: []
-  m_InvalidKeywords: []
+  m_InvalidKeywords:
+  - _FALSECOLOR_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -24,10 +25,22 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _Palette:
+        m_Texture: {fileID: 2800000, guid: 5c2ee4821a8246b458009f97b7656ab2, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Steps: 4
+    - _Brightness: 0.05
+    - _Contrast: 0.5
+    - _DitherDownscale: 3
+    - _Downscale: 2
+    - _FalseColor: 1
+    - _Passthrough: 0
+    - _Slope: 2.2
+    - _Steps: 8
     m_Colors:
+    - _BluePoint: {r: 0, g: 0, b: 1, a: 1}
     - _High: {r: 0.9529412, g: 0.68286204, b: 0.14901957, a: 1}
-    - _Low: {r: 0.41509432, g: 0.064613745, b: 0.40143928, a: 1}
+    - _Low: {r: 0.2264151, g: 0.09505162, b: 0.2205767, a: 1}
   m_BuildTextureStacks: []
