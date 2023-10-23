@@ -6,6 +6,7 @@ Shader "Uber"
         _MainTexBlend("Texture Blend", Range(0, 1)) = 1.0
         [MainColor] _BaseColor("Color", Color) = (1, 1, 1, 1)
         [Toggle]_Triplanar("Triplanar", float) = 0
+        _Specular("Specular", Range(0, 1)) = 0
         _ID("ID", int) = 0
     }
     SubShader
@@ -43,25 +44,24 @@ Shader "Uber"
             {
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
-                float3 normalOS : NORMAL_WS;
-                float3 position : POSITION_WS;
+                float3 normalOS : NORMAL_OS;
+                float3 normalWS : NORMAL_WS;
+                float3 positionOS : POSITION_OS;
+                float3 positionWS : POSITION_WS;
                 float4 screenPos : SCREEN_POS;
                 float4 color : COLOR;
-                float attenuation : ATTENUATION;
             };
-
-            static const float _Jitter = 150.0;
 
             Varyings vert(Attributes input)
             {
                 Varyings output;
 
                 output.vertex = TransformObjectToHClip(input.vertex.xyz);
-                output.vertex.xy = (round((output.vertex.xy / output.vertex.w) * _Jitter) / _Jitter) * output.vertex.w;
+                output.positionWS = TransformObjectToWorld(input.vertex.xyz);
 
                 output.uv = input.uv;
                 output.normalOS = input.normal;
-                float3 normalWS = TransformObjectToWorldNormal(input.normal);
+                output.normalWS = TransformObjectToWorldNormal(input.normal);
 
                 float3 worldScale = float3
                 (
@@ -69,16 +69,15 @@ Shader "Uber"
                     length(float3(unity_ObjectToWorld[0].y, unity_ObjectToWorld[1].y, unity_ObjectToWorld[2].y)), // scale y axis
                     length(float3(unity_ObjectToWorld[0].z, unity_ObjectToWorld[1].z, unity_ObjectToWorld[2].z)) // scale z axis
                 );
-                output.position = input.vertex * worldScale;
+                output.positionOS = input.vertex * worldScale;
 
-                output.attenuation = saturate(dot(normalWS, normalize(_MainLightPosition)));
                 output.color = input.color;
                 output.screenPos = ComputeScreenPos(output.vertex);
 
                 return output;
             }
 
-            static const float3 Ambient = float3(0.212, 0.227, 0.259) * 0.01;
+            static const float3 Ambient = float3(0.212, 0.227, 0.259) * 1.0;
 
             float4 _BaseColor;
 
@@ -89,7 +88,7 @@ Shader "Uber"
 
             float _Triplanar;
 
-            float Unity_Dither_float(float In, float4 ScreenPosition)
+            float Unity_Dither_float(float4 ScreenPosition)
             {
                 float2 uv = ScreenPosition.xy * _ScreenParams.xy;
                 float DITHER_THRESHOLDS[16] =
@@ -100,20 +99,24 @@ Shader "Uber"
                     16.0 / 17.0,  8.0 / 17.0, 14.0 / 17.0,  6.0 / 17.0
                 };
                 uint index = (uint(uv.x) % 4) * 4 + uint(uv.y) % 4;
-                return In - DITHER_THRESHOLDS[index];
+                return DITHER_THRESHOLDS[index];
             }
 
+            float _Specular;
+            
             half4 frag(Varyings input) : SV_Target
             {
                 float3 triplanarWeights = abs(normalize(input.normalOS));
                 float2 uv = lerp
                 (
                     input.uv,
-                    input.position.zy * triplanarWeights.x +
-                    input.position.zx * triplanarWeights.y +
-                    input.position.xy * triplanarWeights.z, 
+                    input.positionOS.zy * triplanarWeights.x +
+                    input.positionOS.zx * triplanarWeights.y +
+                    input.positionOS.xy * triplanarWeights.z, 
                     _Triplanar
                 );
+
+                float dither = Unity_Dither_float(float4(input.screenPos.xy / input.screenPos.w, 0, 0));
                 
                 half4 albedo = lerp(1.0, SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv * _MainTex_ST.xy + _MainTex_ST.zw), _MainTexBlend) * _BaseColor * input.color;
                 half3 decal = albedo.rgb;
@@ -123,11 +126,25 @@ Shader "Uber"
                 half4 color;
                 color.rgb = 0.0;
                 color.a = albedo.a;
+
+                float3 light = normalize(_MainLightPosition);
+                float3 normal = normalize(input.normalWS);
+                float3 view = normalize(_WorldSpaceCameraPos - input.positionWS);
+                float3 h = normalize(view + light);
+
+                float ndl = dot(normal, light);
+                float ndv = dot(normal, view);
+                float attenuation = ndl > 0.0 || ndv < 0.5;
                 
                 color.rgb += albedo * Ambient;
-                color.rgb += albedo * input.attenuation * _MainLightColor;
+                color.rgb += albedo * attenuation * _MainLightColor;
 
-                clip(Unity_Dither_float(color.a, float4(input.screenPos.xy / input.screenPos.w, 0, 0)));
+                float specular = saturate(dot(h, normal));
+                //color += albedo * (pow(1 - ndv, 4) - dither > 0.0) * 0.1;
+
+                color = lerp(color, 1, (specular > 0.9) * _Specular);
+                
+                clip(color.a - dither);
 
                 return half4(color.rgb, 1.0);
             }

@@ -34,8 +34,11 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _ID: 0
+    - _MainTexBlend: 1
     - _NoiseOpacity: 1
     - _Roughness: 0
+    - _Specular: 0
     - _SpecularSize: 15
     - _Triplanar: 0
     m_Colors:

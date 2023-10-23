@@ -108,6 +108,7 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.19999999
     - _GlossyReflections: 1
+    - _ID: 0
     - _Imposter: 1
     - _MainTexBlend: 1
     - _Metallic: 0
@@ -118,6 +119,7 @@ Material:
     - _ReceiveShadows: 1
     - _Smoothness: 0.19999999
     - _SmoothnessTextureChannel: 0
+    - _Specular: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _Surface: 0
