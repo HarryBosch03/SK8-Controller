@@ -30,6 +30,7 @@ Shader "Unlit/PaletteShader"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareNormalsTexture.hlsl"
 
             struct Varyings
             {
@@ -62,7 +63,7 @@ Shader "Unlit/PaletteShader"
             float _Brightness;
             float _Contrast;
 
-            float Unity_Dither_float(float In, uint2 uv)
+            float Unity_Dither_float(uint2 uv)
             {
                 float DITHER_THRESHOLDS[16] =
                 {
@@ -72,7 +73,7 @@ Shader "Unlit/PaletteShader"
                     16.0 / 17.0, 8.0 / 17.0, 14.0 / 17.0, 6.0 / 17.0
                 };
                 uint index = (uint(uv.x) % 4) * 4 + uint(uv.y) % 4;
-                return In - DITHER_THRESHOLDS[index];
+                return DITHER_THRESHOLDS[index];
             }
 
             float3 rgb2okLab(float3 c)
@@ -122,25 +123,45 @@ Shader "Unlit/PaletteShader"
             float3 _BluePoint;
             float _Passthrough;
 
-            float sampleDepth(float2 uv)
+            float4 sampleOutline(float2 uv, float2 pixelSize)
             {
-                return SampleSceneDepth(uv);
-            }
+                float2 uvs[] =
+                {
+                    uv + float2(0, 0) * pixelSize,
+                    uv + float2(1, 1) * pixelSize,
+                    uv + float2(1, 0) * pixelSize,
+                    uv + float2(0, 1) * pixelSize,
+                };
 
-            float sampleOutline(float2 uv, float2 pixelSize)
-            {
-                float4 depth = float4(
-                
-                    sampleDepth(uv + float2( 0,  0) * pixelSize),
-                    sampleDepth(uv + float2( 1,  1) * pixelSize),
-                    sampleDepth(uv + float2( 1,  0) * pixelSize),
-                    sampleDepth(uv + float2( 0,  1) * pixelSize)
-                );
+                float depth[] =
+                {
+                    SampleSceneDepth(uvs[0]),
+                    SampleSceneDepth(uvs[1]),
+                    SampleSceneDepth(uvs[2]),
+                    SampleSceneDepth(uvs[3]),
+                };
 
-                float2 diff = float2(depth[1] - depth[0], depth[3] - depth[2]);
-                float edge = sqrt(diff.x * diff.x + diff.y * diff.y);
+                float3 normals[] =
+                {
+                    SampleSceneNormals(uvs[0]),
+                    SampleSceneNormals(uvs[1]),
+                    SampleSceneNormals(uvs[2]),
+                    SampleSceneNormals(uvs[3]),
+                };
+
+                float3 position = ComputeWorldSpacePosition(uv, depth[0], unity_MatrixInvVP);
+                float3 viewDir = normalize(_WorldSpaceCameraPos - position);
+                float ndv = saturate(1 - dot(viewDir, normals[0] * 2 - 1));
+
+                float depthDifference[] = {depth[1] - depth[0], depth[3] - depth[2]};
+                float edgeDepth = sqrt(depthDifference[0] * depthDifference[0] + depthDifference[1] * depthDifference[1]) > 0.04;
                 
-                return edge > 0.002;
+                float3 normalDifference[] = {normals[1] - normals[0], normals[3] - normals[2]};
+                float edgeNormal = sqrt(dot(normalDifference[0], normalDifference[0]) + dot(normalDifference[1], normalDifference[1]));
+                edgeNormal = edgeNormal > 0.8;
+
+                float edge = max(edgeDepth, edgeNormal);
+                return saturate(edge);
             }
 
             half4 frag(Varyings input) : SV_Target
@@ -167,9 +188,10 @@ Shader "Unlit/PaletteShader"
                 float2 paletteUV = float2(blueness, lightness);
 
                 uint2 ditherUV = input.uv * (_ScreenParams.xy / _Downscale);
+                float dither = Unity_Dither_float(ditherUV);
                 float2 index;
-                index.x = Unity_Dither_float(paletteUV.x * steps.x, ditherUV) / steps.x;
-                index.y = Unity_Dither_float(paletteUV.y * steps.y, ditherUV) / steps.y;
+                index.x = (paletteUV.x * steps.x - dither) / steps.x;
+                index.y = (paletteUV.y * steps.y - dither) / steps.y;
 
                 float3 col = SAMPLE_TEXTURE2D(_Palette, sampler_Palette, index);
 
@@ -179,10 +201,9 @@ Shader "Unlit/PaletteShader"
                     if (paletteUV.x <= 0.0) col = float3(1, 0, 0);
                 }
 
-                float outline = sampleOutline(uv, 2.0 / downscale);
-                return outline;
-                col = lerp(col, 0, outline);
-                
+                float4 outline = sampleOutline(uv, 2.0 / downscale);
+                col = lerp(col, 0, outline * 1.0);
+
                 return float4(col, 1);
             }
             ENDHLSL

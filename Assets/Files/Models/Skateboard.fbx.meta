@@ -23,7 +23,7 @@ ModelImporter:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: Metal
-    second: {fileID: 2100000, guid: 5c7c318dcf28bae408c58dec59ea00c8, type: 2}
+    second: {fileID: 2100000, guid: f042c7d37cb4c8045aaeea4cc9520155, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule

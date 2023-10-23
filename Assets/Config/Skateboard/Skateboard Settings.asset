@@ -17,8 +17,8 @@ MonoBehaviour:
   boardRoll: 5
   steerInputSmoothing: 0.9
   acceleration: 1
-  maxSpeed: 20
-  leanForce: 0.2
+  maxSpeed: 15
+  leanForce: 1
   leanDamping: 0.02
   rollingResistance: 0
   airResistance: 0
@@ -30,6 +30,6 @@ MonoBehaviour:
   wheelRadius: 0.119059
   flipCheckDistance: 0.1
   jumpCooldown: 1
-  flipJumpForce: 4
+  flipJumpForce: 6
   airborneVelocityAlignSpring: 1
   airborneVelocityAlignDamper: 0

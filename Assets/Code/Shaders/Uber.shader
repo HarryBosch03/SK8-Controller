@@ -24,6 +24,9 @@ Shader "Uber"
             #pragma vertex vert
             #pragma fragment frag
 
+            #define MAIN_LIGHT_CALCULATE_SHADOWS
+            #define _MAIN_LIGHT_SHADOWS_CASCADE
+
             #pragma multi_compile_fragment _ _DBUFFER_MRT1 _DBUFFER_MRT2 _DBUFFER_MRT3
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/core.hlsl"
@@ -43,25 +46,23 @@ Shader "Uber"
             {
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
-                float3 normalOS : NORMAL_WS;
-                float3 position : POSITION_WS;
+                float3 normalOS : NORMAL_OS;
+                float3 normalWS : NORMAL_WS;
+                float3 positionOS : POSITION_OS;
+                float3 positionWS : POSITION_WS;
                 float4 screenPos : SCREEN_POS;
                 float4 color : COLOR;
-                float attenuation : ATTENUATION;
             };
-
-            static const float _Jitter = 150.0;
 
             Varyings vert(Attributes input)
             {
                 Varyings output;
 
                 output.vertex = TransformObjectToHClip(input.vertex.xyz);
-                output.vertex.xy = (round((output.vertex.xy / output.vertex.w) * _Jitter) / _Jitter) * output.vertex.w;
 
                 output.uv = input.uv;
                 output.normalOS = input.normal;
-                float3 normalWS = TransformObjectToWorldNormal(input.normal);
+                output.normalWS = TransformObjectToWorldNormal(input.normal);
 
                 float3 worldScale = float3
                 (
@@ -69,9 +70,9 @@ Shader "Uber"
                     length(float3(unity_ObjectToWorld[0].y, unity_ObjectToWorld[1].y, unity_ObjectToWorld[2].y)), // scale y axis
                     length(float3(unity_ObjectToWorld[0].z, unity_ObjectToWorld[1].z, unity_ObjectToWorld[2].z)) // scale z axis
                 );
-                output.position = input.vertex * worldScale;
+                output.positionOS = input.vertex * worldScale;
+                output.positionWS = TransformObjectToWorld(input.vertex.xyz);
 
-                output.attenuation = saturate(dot(normalWS, normalize(_MainLightPosition)));
                 output.color = input.color;
                 output.screenPos = ComputeScreenPos(output.vertex);
 
@@ -109,9 +110,9 @@ Shader "Uber"
                 float2 uv = lerp
                 (
                     input.uv,
-                    input.position.zy * triplanarWeights.x +
-                    input.position.zx * triplanarWeights.y +
-                    input.position.xy * triplanarWeights.z, 
+                    input.positionOS.zy * triplanarWeights.x +
+                    input.positionOS.zx * triplanarWeights.y +
+                    input.positionOS.xy * triplanarWeights.z, 
                     _Triplanar
                 );
                 
@@ -123,14 +124,59 @@ Shader "Uber"
                 half4 color;
                 color.rgb = 0.0;
                 color.a = albedo.a;
+
+                float3 normal = normalize(input.normalWS);
+                float3 light = normalize(_MainLightPosition);
+                float attenuation = saturate(dot(normal, light));
+
+                float lightmapResolution = 32;
+                float4 shadowCoords = TransformWorldToShadowCoord(floor(input.positionWS * lightmapResolution) / lightmapResolution);
+                attenuation *= lerp(MainLightRealtimeShadow(shadowCoords), 1, GetMainLightShadowFade(input.positionWS));
                 
                 color.rgb += albedo * Ambient;
-                color.rgb += albedo * input.attenuation * _MainLightColor;
+                color.rgb += albedo * attenuation * _MainLightColor;
 
                 clip(Unity_Dither_float(color.a, float4(input.screenPos.xy / input.screenPos.w, 0, 0)));
 
                 return half4(color.rgb, 1.0);
             }
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "ShadowCaster"
+            Tags{"LightMode" = "ShadowCaster"}
+
+            ZWrite On
+            ZTest LEqual
+            ColorMask 0
+            Cull[_Cull]
+
+            HLSLPROGRAM
+            #pragma exclude_renderers gles gles3 glcore
+            #pragma target 4.5
+
+            // -------------------------------------
+            // Material Keywords
+            #pragma shader_feature_local_fragment _ALPHATEST_ON
+            #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
+
+            //--------------------------------------
+            // GPU Instancing
+            #pragma multi_compile_instancing
+            #pragma multi_compile _ DOTS_INSTANCING_ON
+
+            // -------------------------------------
+            // Universal Pipeline keywords
+
+            // This is used during shadow map generation to differentiate between directional and punctual light shadows, as they use different formulas to apply Normal Bias
+            #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
+
+            #pragma vertex ShadowPassVertex
+            #pragma fragment ShadowPassFragment
+
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
             ENDHLSL
         }
         Pass
