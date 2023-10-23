@@ -29,6 +29,7 @@ Shader "Unlit/PaletteShader"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
             struct Varyings
             {
@@ -57,7 +58,7 @@ Shader "Unlit/PaletteShader"
             TEXTURE2D(_Palette);
             SAMPLER(sampler_Palette);
             float4 _Palette_TexelSize;
-            
+
             float _Brightness;
             float _Contrast;
 
@@ -114,26 +115,54 @@ Shader "Unlit/PaletteShader"
             {
                 return x * x * x * (x * (6.0f * x - 15.0f) + 10.0f);
             }
-            
+
             int _FalseColor;
             float _Slope;
             int _Downscale;
             float3 _BluePoint;
             float _Passthrough;
 
+            float sampleDepth(float2 uv)
+            {
+                return SampleSceneDepth(uv);
+            }
+
+            float sampleOutline(float2 uv, float2 pixelSize)
+            {
+                float4 depth = float4(
+                
+                    sampleDepth(uv + float2( 0,  0) * pixelSize),
+                    sampleDepth(uv + float2( 1,  1) * pixelSize),
+                    sampleDepth(uv + float2( 1,  0) * pixelSize),
+                    sampleDepth(uv + float2( 0,  1) * pixelSize)
+                );
+
+                float2 diff = float2(depth[1] - depth[0], depth[3] - depth[2]);
+                float edge = sqrt(diff.x * diff.x + diff.y * diff.y);
+                
+                return edge > 0.002;
+            }
+
             half4 frag(Varyings input) : SV_Target
             {
                 clip(input.uv.x - _Passthrough);
-                
+
                 int2 steps = _Palette_TexelSize.zw;
-                int2 downscale = _ScreenParams.xy / _Downscale; 
-                float2 uv = floor(input.uv * downscale) / downscale;
-                
+
+                float2 uv = input.uv;
+                int2 downscale = _ScreenParams.xy;
+
+                if (_Downscale > 1)
+                {
+                    downscale = _ScreenParams.xy / _Downscale;
+                    uv = floor(input.uv * downscale) / downscale;
+                }
+
                 float3 scene = SampleSceneColor(uv);
                 float lightness = dot(scene, float3(0.299, 0.587, 0.144));
                 lightness = (lightness + _Brightness) * (1 + _Contrast);
                 lightness = pow(max(0.0, lightness), 1 / _Slope);
-                
+
                 float blueness = pow(dot(normalize(_BluePoint), normalize(scene)) * 0.5 + 0.5, 4.0);
                 float2 paletteUV = float2(blueness, lightness);
 
@@ -150,6 +179,10 @@ Shader "Unlit/PaletteShader"
                     if (paletteUV.x <= 0.0) col = float3(1, 0, 0);
                 }
 
+                float outline = sampleOutline(uv, 2.0 / downscale);
+                return outline;
+                col = lerp(col, 0, outline);
+                
                 return float4(col, 1);
             }
             ENDHLSL

@@ -32,9 +32,9 @@ Material:
     m_Ints: []
     m_Floats:
     - _Brightness: 0.05
-    - _Contrast: 0.5
+    - _Contrast: 0.37
     - _DitherDownscale: 3
-    - _Downscale: 2
+    - _Downscale: 1
     - _FalseColor: 1
     - _Passthrough: 0
     - _Slope: 2.2

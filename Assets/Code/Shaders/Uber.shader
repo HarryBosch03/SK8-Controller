@@ -6,6 +6,7 @@ Shader "Uber"
         _MainTexBlend("Texture Blend", Range(0, 1)) = 1.0
         [MainColor] _BaseColor("Color", Color) = (1, 1, 1, 1)
         [Toggle]_Triplanar("Triplanar", float) = 0
+        _ID("ID", int) = 0
     }
     SubShader
     {
@@ -27,6 +28,7 @@ Shader "Uber"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/UnityInstancing.hlsl"
 
             struct Attributes
             {
@@ -100,7 +102,7 @@ Shader "Uber"
                 uint index = (uint(uv.x) % 4) * 4 + uint(uv.y) % 4;
                 return In - DITHER_THRESHOLDS[index];
             }
-            
+
             half4 frag(Varyings input) : SV_Target
             {
                 float3 triplanarWeights = abs(normalize(input.normalOS));
