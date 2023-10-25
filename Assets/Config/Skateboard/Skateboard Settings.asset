@@ -13,23 +13,8 @@ MonoBehaviour:
   m_Name: Skateboard Settings
   m_EditorClassIdentifier: 
   steerSensitivity: 0.1
-  maxSteer: 3
-  boardRoll: 5
+  maxSteer: 10
   steerInputSmoothing: 0.9
   acceleration: 1
-  maxSpeed: 15
-  leanForce: 1
-  leanDamping: 0.02
-  rollingResistance: 0
-  airResistance: 0
-  tangentialFriction: 20
-  distanceToGround: 0.18
-  truckOffset: {x: 0.12, y: 0.02, z: 0.33}
-  truckDepenetrationSpring: 800
-  truckDepenetrationDamper: 150
-  wheelRadius: 0.119059
-  flipCheckDistance: 0.1
-  jumpCooldown: 1
-  flipJumpForce: 6
-  airborneVelocityAlignSpring: 1
-  airborneVelocityAlignDamper: 0
+  maxSpeed: 80
+  downforce: 10

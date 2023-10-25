@@ -9,10 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0bd3389f0b104509abf0f40dd8b42e14, type: 3}
-  m_Name: Airborne Camera State
+  m_Script: {fileID: 11500000, guid: 24431060a2a54de1b5b2247da629e7a6, type: 3}
+  m_Name: Wheel Settings
   m_EditorClassIdentifier: 
-  spring: 10
+  spring: 60
   damper: 5
-  followDistance: 0.5
-  verticalOffset: 0.5
+  tangentialFriction: 0.06

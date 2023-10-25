@@ -24,6 +24,11 @@ Shader "Unlit/PaletteShader"
         Pass
         {
             HLSLPROGRAM
+            
+            static const float outlineDepthThreshold = 0.006;
+            static const float outlineFresnelThreshold = 0.0;
+            static const float outlineNormalThreshold = 0.8;
+            
             #pragma vertex vert
             #pragma fragment frag
 
@@ -151,14 +156,14 @@ Shader "Unlit/PaletteShader"
 
                 float3 position = ComputeWorldSpacePosition(uv, depth[0], unity_MatrixInvVP);
                 float3 viewDir = normalize(_WorldSpaceCameraPos - position);
-                float ndv = saturate(1 - dot(viewDir, normals[0] * 2 - 1));
+                float ndv = saturate(1 - dot(viewDir, normals[0]));
 
                 float depthDifference[] = {depth[1] - depth[0], depth[3] - depth[2]};
-                float edgeDepth = sqrt(depthDifference[0] * depthDifference[0] + depthDifference[1] * depthDifference[1]) > 0.04;
+                float edgeDepth = sqrt(depthDifference[0] * depthDifference[0] + depthDifference[1] * depthDifference[1]) > outlineDepthThreshold && ndv > outlineFresnelThreshold;
                 
                 float3 normalDifference[] = {normals[1] - normals[0], normals[3] - normals[2]};
                 float edgeNormal = sqrt(dot(normalDifference[0], normalDifference[0]) + dot(normalDifference[1], normalDifference[1]));
-                edgeNormal = edgeNormal > 0.8;
+                edgeNormal = edgeNormal > outlineNormalThreshold;
 
                 float edge = max(edgeDepth, edgeNormal);
                 return saturate(edge);

@@ -5,80 +5,60 @@ namespace SK8Controller.Player
 {
     public class SkateboardCamera : MonoBehaviour
     {
-        public GroundedCameraState groundedCameraState;
-        public AirborneCameraState airborneCameraState;
-        [SerializeField] private float warpDistance;
-        [SerializeField][Range(0.0f, 1.0f)] private float shakeSmoothing;
-
-        [HideInInspector] public CameraState currentState;
+        public Vector3 translationOffset;
+        public Vector3 lookAtOffset;
+        public float spring;
+        public float damper;
+        public float baseFov = 90.0f;
+        [Range(0.0f, 1.0f)] public float shakeSmoothing;
+        
         [HideInInspector] public PlayerController target;
 
-        [HideInInspector] public Rigidbody cameraBody;
-
-        [HideInInspector] public Vector3 targetPosition;
-        [HideInInspector] public Vector3 targetVelocity;
-        [HideInInspector] public float targetFieldOfView;
-        [HideInInspector] public Vector3 lookAtTarget;
-        [HideInInspector] public float shake;
+        private Vector3 targetPosition;
+        private Vector3 targetVelocity;
+        private float targetFieldOfView;
+        private Vector3 lookAtTarget;
+        private float shake;
         
         private Camera cam;
         private Matrix4x4 basis;
         private Vector3 shakeOffset;
 
-        public Vector3 Position => cameraBody.position;
-        public Quaternion Rotation => cameraBody.rotation;
+        private Vector3 position;
+        private Vector3 velocity;
+        private Vector3 force;
+        private Quaternion rotation;
+        private Quaternion offsetRotation;
 
         private void OnEnable()
         {
             target = FindObjectOfType<PlayerController>();
             cam = Camera.main;
-
-            cameraBody = transform.Find("CameraBody").GetComponent<Rigidbody>();
-            cameraBody.mass = 0.0f;
-            cameraBody.constraints = RigidbodyConstraints.FreezeRotation;
-            cameraBody.transform.SetParent(null);
-
-            ChangeState(groundedCameraState);
         }
 
         private void FixedUpdate()
         {
-            switch (target.isOnGround)
-            {
-                case true when currentState is AirborneCameraState:
-                    ChangeState(groundedCameraState);
-                    break;
-                case false when currentState is GroundedCameraState:
-                    ChangeState(airborneCameraState);
-                    break;
-            }
-
-            if (currentState) currentState.Tick(this);
-        }
-
-        public void ChangeState(CameraState newState)
-        {
-            if (currentState) currentState.Exit(this);
-            currentState = newState;
-            if (currentState) currentState.Enter(this);
-        }
-
-        public void Move(float spring, float damper)
-        {
-            if ((targetPosition - cameraBody.position).magnitude > warpDistance)
-            {
-                cameraBody.position = targetPosition;
-            }
+            if (target.wheelsOnGround == 4) offsetRotation = target.transform.rotation;
+            targetPosition = target.transform.position + offsetRotation * translationOffset;
+            lookAtTarget =  target.transform.position + offsetRotation * lookAtOffset;
             
-            var force = (targetPosition - cameraBody.position) * spring + (targetVelocity - cameraBody.velocity) * damper;
-            var rotation = Quaternion.LookRotation(lookAtTarget - cameraBody.position);
+            targetFieldOfView = baseFov;
 
-            cameraBody.AddForce(force, ForceMode.Acceleration);
-            cameraBody.rotation = rotation;
+            Move();
+        }
 
+        public void Move()
+        {
+            force = (targetPosition - position) * spring + (targetVelocity - velocity) * damper;
+            rotation = Quaternion.LookRotation(lookAtTarget - position);
+
+            position += velocity * Time.deltaTime;
+            velocity += force * Time.deltaTime;
+            force = Vector3.zero;
+            
             shakeOffset = Vector3.Lerp(Random.insideUnitSphere * shake / 100.0f, shakeOffset, shakeSmoothing);
-            cam.transform.position = cameraBody.position + shakeOffset;
-            cam.transform.rotation = cameraBody.rotation;
+            cam.transform.position = position + shakeOffset;
+            cam.transform.rotation = rotation;
             cam.fieldOfView = targetFieldOfView;
         }
     }
