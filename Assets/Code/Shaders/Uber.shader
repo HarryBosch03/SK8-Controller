@@ -129,7 +129,7 @@ Shader "Uber"
                 float3 light = normalize(_MainLightPosition);
                 float attenuation = saturate(dot(normal, light));
 
-                float lightmapResolution = 32;
+                float lightmapResolution = 16;
                 float4 shadowCoords = TransformWorldToShadowCoord(floor(input.positionWS * lightmapResolution) / lightmapResolution);
                 attenuation *= lerp(MainLightRealtimeShadow(shadowCoords), 1, GetMainLightShadowFade(input.positionWS));
                 

@@ -15,6 +15,6 @@ MonoBehaviour:
   steerSensitivity: 0.1
   maxSteer: 10
   steerInputSmoothing: 0.9
-  acceleration: 1
+  acceleration: 0.5
   maxSpeed: 80
-  downforce: 10
+  downforce: 2

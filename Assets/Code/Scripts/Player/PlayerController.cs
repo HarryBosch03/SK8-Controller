@@ -14,6 +14,7 @@ public class PlayerController : MonoBehaviour
 
     [SerializeField] [Range(-1.0f, 1.0f)] private float rawSteerInput;
 
+    private Vector3 up;
     private bool useMouse;
     public int wheelsOnGround;
     private Wheel[] wheels = new Wheel[4];
@@ -102,9 +103,18 @@ public class PlayerController : MonoBehaviour
         Steer += (rawSteerInput * settings.maxSteer - Steer) * (1.0f - settings.steerInputSmoothing);
 
         wheelsOnGround = 0;
+        var up = Vector3.zero;
         foreach (var wheel in wheels)
         {
-            if (wheel.isOnGround) wheelsOnGround++;
+            if (!wheel.isOnGround) continue;
+            
+            wheelsOnGround++;
+            up += wheel.groundHit.normal;
+        }
+
+        if (wheelsOnGround > 0)
+        {
+            this.up = up.normalized;
         }
         
         ApplyPushForce();

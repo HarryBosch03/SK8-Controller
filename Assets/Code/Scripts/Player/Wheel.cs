@@ -11,9 +11,14 @@ namespace SK8Controller.Player
         public Vector3 wheelEnd;
         public WheelSettings settings;
 
+        [Space] 
+        public float wheelRadius;
+
+        private Transform wheelModel;
+        private float roll;
         public bool isOnGround;
         private Vector3 velocity;
-        private RaycastHit groundHit;
+        public RaycastHit groundHit;
         private float contraction;
         private Rigidbody body;
         
@@ -24,6 +29,7 @@ namespace SK8Controller.Player
         private void Awake()
         {
             body = GetComponentInParent<Rigidbody>();
+            wheelModel = transform.GetChild(0);
         }
 
         private void FixedUpdate()
@@ -32,6 +38,12 @@ namespace SK8Controller.Player
 
             velocity = isOnGround ? body.GetPointVelocity(groundHit.point) : Vector3.zero;
 
+            var fwdSpeed = Vector3.Dot(transform.forward, velocity);
+            roll += fwdSpeed / wheelRadius * Time.deltaTime;
+            
+            wheelModel.position = (isOnGround ? groundHit.point : transform.TransformPoint(wheelEnd)) + (isOnGround ? groundHit.normal : transform.up) * wheelRadius;
+            wheelModel.localRotation = Quaternion.Euler(0.0f, SteerAngle, 0.0f) * Quaternion.Euler(roll * Mathf.Rad2Deg, 0.0f, 0.0f);
+            
             ApplyDrive();
             ApplySuspension();
             ApplyTangentFriction();

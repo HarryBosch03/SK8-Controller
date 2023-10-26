@@ -7,9 +7,12 @@ Shader "Unlit/PaletteShader"
         _Contrast("Contrast", Range(-1, 1)) = 0
         _Slope("Slope", float) = 0
         [Toggle]_FalseColor("False Color", int) = 0
-        _Downscale("Dither Downscale", int) = 2
+        _Downscale("Downscale", int) = 2
         _BluePoint("Blue Point", Color) = (0, 0, 1)
         _Passthrough("Passthrough", Range(0.0, 1.0)) = 0.0
+        _OutlineColor("Outline Color", Color) = (0, 0, 0, 1)
+        _OutlineDepth("Outline Depth Threshold", Range(0.0, 0.01)) = 0.006
+        _OutlineNormal("Outline Normal Threshold", Range(0.0, 0.8)) = 0.8
     }
     SubShader
     {
@@ -24,10 +27,6 @@ Shader "Unlit/PaletteShader"
         Pass
         {
             HLSLPROGRAM
-            
-            static const float outlineDepthThreshold = 0.006;
-            static const float outlineFresnelThreshold = 0.0;
-            static const float outlineNormalThreshold = 0.8;
             
             #pragma vertex vert
             #pragma fragment frag
@@ -128,6 +127,10 @@ Shader "Unlit/PaletteShader"
             float3 _BluePoint;
             float _Passthrough;
 
+            float4 _OutlineColor;
+            float _OutlineDepth;
+            float _OutlineNormal;
+
             float4 sampleOutline(float2 uv, float2 pixelSize)
             {
                 float2 uvs[] =
@@ -159,11 +162,11 @@ Shader "Unlit/PaletteShader"
                 float ndv = saturate(1 - dot(viewDir, normals[0]));
 
                 float depthDifference[] = {depth[1] - depth[0], depth[3] - depth[2]};
-                float edgeDepth = sqrt(depthDifference[0] * depthDifference[0] + depthDifference[1] * depthDifference[1]) > outlineDepthThreshold && ndv > outlineFresnelThreshold;
+                float edgeDepth = sqrt(depthDifference[0] * depthDifference[0] + depthDifference[1] * depthDifference[1]) > _OutlineDepth;
                 
                 float3 normalDifference[] = {normals[1] - normals[0], normals[3] - normals[2]};
                 float edgeNormal = sqrt(dot(normalDifference[0], normalDifference[0]) + dot(normalDifference[1], normalDifference[1]));
-                edgeNormal = edgeNormal > outlineNormalThreshold;
+                edgeNormal = edgeNormal > _OutlineNormal;
 
                 float edge = max(edgeDepth, edgeNormal);
                 return saturate(edge);
@@ -177,12 +180,6 @@ Shader "Unlit/PaletteShader"
 
                 float2 uv = input.uv;
                 int2 downscale = _ScreenParams.xy;
-
-                if (_Downscale > 1)
-                {
-                    downscale = _ScreenParams.xy / _Downscale;
-                    uv = floor(input.uv * downscale) / downscale;
-                }
 
                 float3 scene = SampleSceneColor(uv);
                 float lightness = dot(scene, float3(0.299, 0.587, 0.144));
@@ -207,7 +204,7 @@ Shader "Unlit/PaletteShader"
                 }
 
                 float4 outline = sampleOutline(uv, 2.0 / downscale);
-                col = lerp(col, 0, outline * 1.0);
+                col = lerp(col, _OutlineColor, outline);
 
                 return float4(col, 1);
             }

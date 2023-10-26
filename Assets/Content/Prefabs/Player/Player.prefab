@@ -24,7 +24,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5971786037840241320}
-  m_LocalRotation: {x: -0.038918022, y: -0.0000000021491682, z: -8.3704786e-11, w: 0.9992424}
+  m_LocalRotation: {x: -0.03891802, y: 0.0000000021491684, z: 8.3704786e-11, w: 0.9992424}
   m_LocalPosition: {x: 0, y: 2.2699997, z: -4.05}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -211,7 +211,7 @@ MonoBehaviour:
       m_Action: Discrete Turn
       m_Flags: 0
     m_Flags: 0
-  centerOfMass: {x: 0, y: 0.4, z: 0}
+  centerOfMass: {x: 0, y: 0, z: 0}
   rawSteerInput: 0
   wheelsOnGround: 0
 --- !u!54 &6502879702740801048
@@ -304,8 +304,8 @@ MonoBehaviour:
   m_LookaheadTime: 0
   m_LookaheadSmoothing: 0
   m_LookaheadIgnoreY: 0
-  m_HorizontalDamping: 0
-  m_VerticalDamping: 0
+  m_HorizontalDamping: 0.2
+  m_VerticalDamping: 0.2
   m_ScreenX: 0.5
   m_ScreenY: 0.55
   m_DeadZoneWidth: 0
@@ -329,12 +329,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_BindingMode: 3
   m_FollowOffset: {x: 0, y: 2.27, z: -4.05}
-  m_XDamping: 0.1
-  m_YDamping: 0.1
-  m_ZDamping: 0.1
+  m_XDamping: 0.3
+  m_YDamping: 0.3
+  m_ZDamping: 0.3
   m_AngularDampingMode: 0
   m_PitchDamping: 0
-  m_YawDamping: 1
+  m_YawDamping: 0.5
   m_RollDamping: 0
   m_AngularDamping: 0
 --- !u!1001 &7031156187031169620
@@ -388,10 +388,30 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -8528031277298467482, guid: 06d96a1d93a5c4c45b752347a02bb970, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 9ee2e5dbe9e49244582ff470f2f49098, type: 2}
+    - target: {fileID: -7997550100265381906, guid: 06d96a1d93a5c4c45b752347a02bb970, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 9ee2e5dbe9e49244582ff470f2f49098, type: 2}
+    - target: {fileID: -7511558181221131132, guid: 06d96a1d93a5c4c45b752347a02bb970, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: f042c7d37cb4c8045aaeea4cc9520155, type: 2}
     - target: {fileID: 919132149155446097, guid: 06d96a1d93a5c4c45b752347a02bb970, type: 3}
       propertyPath: m_Name
       value: RC Car
       objectReference: {fileID: 0}
+    - target: {fileID: 4295849046681191365, guid: 06d96a1d93a5c4c45b752347a02bb970, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 9ee2e5dbe9e49244582ff470f2f49098, type: 2}
+    - target: {fileID: 4817250171402485314, guid: 06d96a1d93a5c4c45b752347a02bb970, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 9ee2e5dbe9e49244582ff470f2f49098, type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 06d96a1d93a5c4c45b752347a02bb970, type: 3}
 --- !u!1 &1526377993570557811 stripped
@@ -412,8 +432,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   wheelStart: {x: -0.45, y: -0.21, z: 0}
-  wheelEnd: {x: -0.45, y: -0.63, z: 0}
+  wheelEnd: {x: -0.45, y: -0.84, z: 0}
   settings: {fileID: 11400000, guid: df2d6ab7f73c6a3478e65d64a963d44e, type: 2}
+  wheelRadius: 0.36
   isOnGround: 0
 --- !u!1 &7034703379903643624 stripped
 GameObject:
@@ -433,8 +454,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   wheelStart: {x: 0.45, y: -0.21, z: 0}
-  wheelEnd: {x: 0.45, y: -0.63, z: 0}
+  wheelEnd: {x: 0.45, y: -0.84, z: 0}
   settings: {fileID: 11400000, guid: df2d6ab7f73c6a3478e65d64a963d44e, type: 2}
+  wheelRadius: 0.36
   isOnGround: 0
 --- !u!4 &7356935869602008511 stripped
 Transform:
@@ -459,8 +481,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   wheelStart: {x: -0.45, y: -0.21, z: 0}
-  wheelEnd: {x: -0.45, y: -0.63, z: 0}
+  wheelEnd: {x: -0.45, y: -0.84, z: 0}
   settings: {fileID: 11400000, guid: df2d6ab7f73c6a3478e65d64a963d44e, type: 2}
+  wheelRadius: 0.36
   isOnGround: 0
 --- !u!1 &7877577077116196613 stripped
 GameObject:
@@ -511,6 +534,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   wheelStart: {x: 0.45, y: -0.21, z: 0}
-  wheelEnd: {x: 0.45, y: -0.63, z: 0}
+  wheelEnd: {x: 0.45, y: -0.84, z: 0}
   settings: {fileID: 11400000, guid: df2d6ab7f73c6a3478e65d64a963d44e, type: 2}
+  wheelRadius: 0.36
   isOnGround: 0
