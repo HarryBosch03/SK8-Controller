@@ -2,6 +2,7 @@ Shader "Unlit/PaletteShader"
 {
     Properties
     {
+        _MainTex("MainTex", 2D) = "white" {}
         _Palette("Palette", 2D) = "white" {}
         _Brightness("Brightness", Range(-1, 1)) = 0
         _Contrast("Contrast", Range(-1, 1)) = 0
@@ -131,6 +132,9 @@ Shader "Unlit/PaletteShader"
             float _OutlineDepth;
             float _OutlineNormal;
 
+            TEXTURE2D(_PaletteTexture);
+            SAMPLER(sampler_PaletteTexture);
+
             float4 sampleOutline(float2 uv, float2 pixelSize)
             {
                 float2 uvs[] =
@@ -181,7 +185,7 @@ Shader "Unlit/PaletteShader"
                 float2 uv = input.uv;
                 int2 downscale = _ScreenParams.xy;
 
-                float3 scene = SampleSceneColor(uv);
+                float3 scene = SAMPLE_TEXTURE2D(_PaletteTexture, sampler_PaletteTexture, uv);
                 float lightness = dot(scene, float3(0.299, 0.587, 0.144));
                 lightness = (lightness + _Brightness) * (1 + _Contrast);
                 lightness = pow(max(0.0, lightness), 1 / _Slope);
