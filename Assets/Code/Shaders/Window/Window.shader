@@ -1,11 +1,9 @@
-Shader "Uber"
+﻿Shader "Unlit/Window"
 {
-    Properties
+	Properties
     {
-        [MainColor] _BaseColor("Base Color", Color) = (1, 1, 1, 1)
-        [MainColor] _EmissiveColor("Emissive Color", Color) = (1, 1, 1, 1)
-        _Brightness("Emissive Brightness", float) = 0.0
-    }
+        _Reflection("Reflection Texture", 2D) = "black" {} 
+	}
     SubShader
     {
         Tags
@@ -29,7 +27,7 @@ Shader "Uber"
 
             #pragma multi_compile_fragment _ _DBUFFER_MRT1 _DBUFFER_MRT2 _DBUFFER_MRT3
 
-            #include "UberLitPass.hlsl"
+            #include "WindowPass.hlsl"
 
             ENDHLSL
         }

@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6e953143b5c4d2b935f1ccda446545a, type: 3}
   m_Name: Skateboard Settings
   m_EditorClassIdentifier: 
-  steerSensitivity: 0.1
-  maxSteer: 10
-  steerInputSmoothing: 0.9
+  steerSensitivity: 0.01
+  steerExponent: 0
+  maxSteer: 4
+  steerInputSmoothing: 0.2
   acceleration: 0.5
   maxSpeed: 80
   downforce: 2

@@ -5,6 +5,7 @@
 public class SkateboardSettings : ScriptableObject
 {
     public float steerSensitivity = 0.1f;
+    public int steerExponent = 0;
     public float maxSteer = 3.0f;
     [Range(0.0f, 1.0f)] public float steerInputSmoothing = 0.9f;
 

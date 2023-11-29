@@ -1,11 +1,12 @@
-﻿#include "UberInput.hlsl"
+﻿#include "Assets/Code/Shaders/Common.hlsl"
+
+TEX(_Reflection);
 
 struct Attributes
 {
     float4 vertex : POSITION;
     float2 uv : TEXCOORD0;
     float4 normal : NORMAL;
-    float4 color : COLOR;
 };
 
 struct Varyings
@@ -13,7 +14,6 @@ struct Varyings
     float2 uv : TEXCOORD0;
     float4 vertex : SV_POSITION;
     float3 normalWS : NORMAL_WS;
-    float4 color : COLOR;
 };
 
 struct Surface
@@ -39,7 +39,6 @@ Varyings vert(Attributes input)
     output.vertex = TransformObjectToHClip(input.vertex.xyz);
     output.uv = input.uv;
     output.normalWS = TransformObjectToWorldNormal(input.normal);
-    output.color = input.color;
 
     return output;
 }
@@ -53,7 +52,7 @@ Surface InitSurface(Varyings input)
 {
     Surface res;
 
-    half4 col = _BaseColor * input.color;
+    half4 col = 1.0;
     res.albedo = col.rgb;
     res.alpha = col.a;
     res.normal = normalize(input.normalWS);
@@ -90,13 +89,6 @@ half4 frag(Varyings input) : SV_Target
     Lighting lighting = CalcLighting(input, surface);
     
     // Init Final Color
-    half4 color = 0.0;
-
-    // Apply Lighting
-    color.rgb += surface.albedo * lighting.color * lerp(0.5, 1.0, lighting.attenuation);
-    color.a = surface.alpha;
-
-    color += _EmissiveColor * input.color * _Brightness;
-    
+    half4 color = SAMPLE_TEX(_Reflection, input.vertex.xy / _ScreenSize.x);
     return color;
 }

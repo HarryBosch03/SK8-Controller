@@ -33,10 +33,10 @@ public class PlayerController : MonoBehaviour
     {
         if (!Body) Body = GetComponent<Rigidbody>();
 
-        wheels[0] = transform.Find("RC Car/WheelAnchor.FL").GetComponent<Wheel>();
-        wheels[1] = transform.Find("RC Car/WheelAnchor.FR").GetComponent<Wheel>();
-        wheels[2] = transform.Find("RC Car/WheelAnchor.BL").GetComponent<Wheel>();
-        wheels[3] = transform.Find("RC Car/WheelAnchor.BR").GetComponent<Wheel>();
+        wheels[0] = transform.Find("Car/WheelAnchor.FL").GetComponent<Wheel>();
+        wheels[1] = transform.Find("Car/WheelAnchor.FR").GetComponent<Wheel>();
+        wheels[2] = transform.Find("Car/WheelAnchor.BL").GetComponent<Wheel>();
+        wheels[3] = transform.Find("Car/WheelAnchor.BR").GetComponent<Wheel>();
     }
 
     private void OnEnable()
@@ -83,6 +83,8 @@ public class PlayerController : MonoBehaviour
             if (delta.magnitude >= 0.5f) useMouse = true;
         }
 
+        var steer = Mathf.Pow(Steer, settings.steerExponent * 2 + 1);
+        
         wheels[0].SteerAngle = Steer;
         wheels[1].SteerAngle = Steer;
     }

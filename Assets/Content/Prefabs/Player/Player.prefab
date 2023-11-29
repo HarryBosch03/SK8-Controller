@@ -98,7 +98,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &2444491819047244392
 Transform:
   m_ObjectHideFlags: 0
@@ -139,7 +139,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5971786037840241320}
-  m_LocalRotation: {x: -0.03733427, y: 0.000000017194385, z: 6.423876e-10, w: 0.99930286}
+  m_LocalRotation: {x: -0.03733427, y: -0.000000017194386, z: -6.4238764e-10, w: 0.99930286}
   m_LocalPosition: {x: 0, y: 2.5999997, z: -4.05}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -326,6 +326,30 @@ MonoBehaviour:
       m_Groups: 
       m_Action: Discrete Turn
       m_Flags: 0
+    - m_Name: Keyboard
+      m_Id: 4e54fe23-34b0-4294-8fa6-e6fe7fe52222
+      m_Path: 1DAxis
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Discrete Turn
+      m_Flags: 4
+    - m_Name: negative
+      m_Id: f78876da-9238-4ca7-9a87-f3c872b240c8
+      m_Path: <Keyboard>/a
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Discrete Turn
+      m_Flags: 8
+    - m_Name: positive
+      m_Id: a55c6be7-f58f-4932-9293-e15b61e47acd
+      m_Path: <Keyboard>/d
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Discrete Turn
+      m_Flags: 8
     m_Flags: 0
   centerOfMass: {x: 0, y: 0, z: 0}
   rawSteerInput: 0
@@ -470,7 +494,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 06d96a1d93a5c4c45b752347a02bb970, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.50406927
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 06d96a1d93a5c4c45b752347a02bb970, type: 3}
       propertyPath: m_LocalPosition.z
@@ -504,30 +528,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -8528031277298467482, guid: 06d96a1d93a5c4c45b752347a02bb970, type: 3}
-      propertyPath: m_Materials.Array.data[0]
-      value: 
-      objectReference: {fileID: 2100000, guid: 5ea06330bb90614449a0704f8316ecd0, type: 2}
-    - target: {fileID: -7997550100265381906, guid: 06d96a1d93a5c4c45b752347a02bb970, type: 3}
-      propertyPath: m_Materials.Array.data[0]
-      value: 
-      objectReference: {fileID: 2100000, guid: 5ea06330bb90614449a0704f8316ecd0, type: 2}
-    - target: {fileID: -7511558181221131132, guid: 06d96a1d93a5c4c45b752347a02bb970, type: 3}
-      propertyPath: m_Materials.Array.data[0]
-      value: 
-      objectReference: {fileID: 2100000, guid: 5ea06330bb90614449a0704f8316ecd0, type: 2}
     - target: {fileID: 919132149155446097, guid: 06d96a1d93a5c4c45b752347a02bb970, type: 3}
       propertyPath: m_Name
-      value: RC Car
+      value: Car
       objectReference: {fileID: 0}
-    - target: {fileID: 4295849046681191365, guid: 06d96a1d93a5c4c45b752347a02bb970, type: 3}
-      propertyPath: m_Materials.Array.data[0]
-      value: 
-      objectReference: {fileID: 2100000, guid: 5ea06330bb90614449a0704f8316ecd0, type: 2}
-    - target: {fileID: 4817250171402485314, guid: 06d96a1d93a5c4c45b752347a02bb970, type: 3}
-      propertyPath: m_Materials.Array.data[0]
-      value: 
-      objectReference: {fileID: 2100000, guid: 5ea06330bb90614449a0704f8316ecd0, type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 06d96a1d93a5c4c45b752347a02bb970, type: 3}
 --- !u!1 &1526377993570557811 stripped
@@ -547,10 +551,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce126f92db894b10b4bd707bfcc20b36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  wheelStart: {x: -0.45, y: -0.21, z: 0}
-  wheelEnd: {x: -0.45, y: -0.84, z: 0}
+  wheelStart: {x: 0, y: 0.2, z: 0}
+  wheelEnd: {x: 0, y: -0.1, z: 0}
   settings: {fileID: 11400000, guid: df2d6ab7f73c6a3478e65d64a963d44e, type: 2}
-  wheelRadius: 0.36
+  wheelRadius: 0.2506515
   isOnGround: 0
 --- !u!1 &7034703379903643624 stripped
 GameObject:
@@ -569,10 +573,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce126f92db894b10b4bd707bfcc20b36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  wheelStart: {x: 0.45, y: -0.21, z: 0}
-  wheelEnd: {x: 0.45, y: -0.84, z: 0}
+  wheelStart: {x: 0, y: 0.2, z: 0}
+  wheelEnd: {x: 0, y: -0.1, z: 0}
   settings: {fileID: 11400000, guid: df2d6ab7f73c6a3478e65d64a963d44e, type: 2}
-  wheelRadius: 0.36
+  wheelRadius: 0.2506515
   isOnGround: 0
 --- !u!4 &7356935869602008511 stripped
 Transform:
@@ -596,10 +600,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce126f92db894b10b4bd707bfcc20b36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  wheelStart: {x: -0.45, y: -0.21, z: 0}
-  wheelEnd: {x: -0.45, y: -0.84, z: 0}
+  wheelStart: {x: 0, y: 0.2, z: 0}
+  wheelEnd: {x: 0, y: -0.1, z: 0}
   settings: {fileID: 11400000, guid: df2d6ab7f73c6a3478e65d64a963d44e, type: 2}
-  wheelRadius: 0.36
+  wheelRadius: 0.2506515
   isOnGround: 0
 --- !u!1 &7877577077116196613 stripped
 GameObject:
@@ -617,8 +621,8 @@ BoxCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 1.2715693, y: 0.4501691, z: 1.0821017}
-  m_Center: {x: 0, y: 0.6904931, z: -0.49592072}
+  m_Size: {x: 1.2715693, y: 0.46452427, z: 1.5737662}
+  m_Center: {x: 0, y: 0.9955404, z: -0.30033147}
 --- !u!65 &3512850413709085719
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -630,8 +634,8 @@ BoxCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 1.5668812, y: 0.6727364, z: 3.2008576}
-  m_Center: {x: 0, y: 0.14084733, z: -0.027481794}
+  m_Size: {x: 1.5668812, y: 0.5291846, z: 3.3228765}
+  m_Center: {x: 0, y: 0.51408184, z: 0.008406162}
 --- !u!1 &8660560452130952289 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -7375820228094607819, guid: 06d96a1d93a5c4c45b752347a02bb970, type: 3}
@@ -649,8 +653,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce126f92db894b10b4bd707bfcc20b36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  wheelStart: {x: 0.45, y: -0.21, z: 0}
-  wheelEnd: {x: 0.45, y: -0.84, z: 0}
+  wheelStart: {x: 0, y: 0.2, z: 0}
+  wheelEnd: {x: 0, y: -0.1, z: 0}
   settings: {fileID: 11400000, guid: df2d6ab7f73c6a3478e65d64a963d44e, type: 2}
-  wheelRadius: 0.36
+  wheelRadius: 0.2506515
   isOnGround: 0
