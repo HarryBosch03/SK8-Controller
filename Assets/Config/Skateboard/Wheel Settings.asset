@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: Wheel Settings
   m_EditorClassIdentifier: 
   spring: 60
-  damper: 5
+  damper: 15
   tangentialFriction: 0.06
