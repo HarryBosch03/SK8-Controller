@@ -19,3 +19,4 @@ MonoBehaviour:
   acceleration: 0.5
   maxSpeed: 80
   downforce: 2
+  gravityScale: 3

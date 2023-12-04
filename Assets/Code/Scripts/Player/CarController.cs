@@ -26,10 +26,7 @@ namespace SK8Controller.Player
 
         public float GetForwardSpeed() => Vector3.Dot(Body.velocity, transform.forward);
 
-        private void Awake()
-        {
-            GetFromHierarchy();
-        }
+        private void Awake() { GetFromHierarchy(); }
 
         private void GetFromHierarchy()
         {
@@ -86,7 +83,7 @@ namespace SK8Controller.Player
             }
 
             var steer = Mathf.Pow(Steer, settings.steerExponent * 2 + 1);
-        
+
             wheels[0].SteerAngle = Steer;
             wheels[1].SteerAngle = Steer;
         }
@@ -103,7 +100,7 @@ namespace SK8Controller.Player
         private void FixedUpdate()
         {
             Body.centerOfMass = centerOfMass;
-        
+
             Steer += (rawSteerInput * settings.maxSteer - Steer) * (1.0f - settings.steerInputSmoothing);
 
             wheelsOnGround = 0;
@@ -111,7 +108,7 @@ namespace SK8Controller.Player
             foreach (var wheel in wheels)
             {
                 if (!wheel.isOnGround) continue;
-            
+
                 wheelsOnGround++;
                 up += wheel.groundHit.normal;
             }
@@ -120,9 +117,17 @@ namespace SK8Controller.Player
             {
                 this.up = up.normalized;
             }
-        
+
             ApplyPushForce();
             ApplyDownForce();
+            ApplyGravity();
+        }
+
+        private void ApplyGravity()
+        {
+            if (!Body.useGravity) return;
+
+            Body.AddForce(Physics.gravity * (settings.gravityScale - 1.0f), ForceMode.Acceleration);
         }
 
         private void ApplyDownForce()

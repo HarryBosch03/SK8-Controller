@@ -14,5 +14,6 @@ namespace SK8Controller.Config
         public float acceleration = 1.0f;
         public float maxSpeed = 20.0f;
         public float downforce;
+        public float gravityScale = 3.0f;
     }
 }

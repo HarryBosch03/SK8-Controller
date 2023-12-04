@@ -39,7 +39,8 @@ MonoBehaviour:
     debugReplacementPS: {fileID: 4800000, guid: cf852408f2e174538bcd9b7fda1c5ae7, type: 3}
   m_RendererFeatures:
   - {fileID: -422153399077534826}
-  m_RendererFeatureMap: 9683425fb83524fa
+  - {fileID: 8819833957952765215}
+  m_RendererFeatureMap: 9683425fb83524fa1fbdb3594158667a
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   shaders:
@@ -57,10 +58,10 @@ MonoBehaviour:
   m_AssetVersion: 2
   m_OpaqueLayerMask:
     serializedVersion: 2
-    m_Bits: 55
+    m_Bits: 183
   m_TransparentLayerMask:
     serializedVersion: 2
-    m_Bits: 55
+    m_Bits: 183
   m_DefaultStencilState:
     overrideStencilState: 0
     stencilReference: 0
@@ -90,3 +91,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Active: 1
   height: 360
+--- !u!114 &8819833957952765215
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb672d3ab1874fbaa1902b3505df9da0, type: 3}
+  m_Name: OutlineFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  whiteMaterial: {fileID: 2100000, guid: 9248a1c7909b29d4ab889619d40e4ec2, type: 2}
+  blackMaterial: {fileID: 2100000, guid: c61ebc06461dc2a43b6f0839d7a05955, type: 2}
+  blitMaterial: {fileID: 2100000, guid: 9121d9c9042d0664eb8afd9b10cbdf28, type: 2}

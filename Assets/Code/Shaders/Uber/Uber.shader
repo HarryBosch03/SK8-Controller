@@ -3,8 +3,12 @@ Shader "Uber"
     Properties
     {
         [MainColor] _BaseColor("Base Color", Color) = (1, 1, 1, 1)
-        [MainColor] _EmissiveColor("Emissive Color", Color) = (1, 1, 1, 1)
+        _MainTex("Albedo", 2D) = "white" {}
+        _EmissiveColor("Emissive Color", Color) = (1, 1, 1, 1)
         _Brightness("Emissive Brightness", float) = 0.0
+        [Normal] _NormalMap("Normal Map", 2D) = "bump" {}
+        _NormalStrength("Normal Strength", float) = 1
+        [Toggle] _Triplanar("Triplanar", float) = 0.0
     }
     SubShader
     {
@@ -26,6 +30,7 @@ Shader "Uber"
             #define MAIN_LIGHT_CALCULATE_SHADOWS
             #define _SHADOWS_SOFT
             #define _MAIN_LIGHT_SHADOWS_CASCADE
+            #define _ADDITIONAL_LIGHTS
 
             #pragma multi_compile_fragment _ _DBUFFER_MRT1 _DBUFFER_MRT2 _DBUFFER_MRT3
 
