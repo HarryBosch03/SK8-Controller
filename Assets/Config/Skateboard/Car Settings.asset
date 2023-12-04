@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f6e953143b5c4d2b935f1ccda446545a, type: 3}
-  m_Name: Skateboard Settings
+  m_Name: Car Settings
   m_EditorClassIdentifier: 
   steerSensitivity: 0.01
   steerExponent: 0
   maxSteer: 4
-  steerInputSmoothing: 0.2
+  steerInputSmoothing: 0.6
   acceleration: 0.5
   maxSpeed: 80
   downforce: 2

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace SK8Controller.Player
 {
-    [RequireComponent(typeof(PlayerController))]
+    [RequireComponent(typeof(CarController))]
     public class PlayerFX : MonoBehaviour
     {
         

@@ -12,7 +12,7 @@ namespace SK8Controller.Player
         public float baseFov = 90.0f;
         [Range(0.0f, 1.0f)] public float shakeSmoothing;
         
-        [HideInInspector] public PlayerController target;
+        [HideInInspector] public CarController target;
 
         private Vector3 targetPosition;
         private Vector3 targetVelocity;
@@ -32,7 +32,7 @@ namespace SK8Controller.Player
 
         private void OnEnable()
         {
-            target = FindObjectOfType<PlayerController>();
+            target = FindObjectOfType<CarController>();
             cam = Camera.main;
         }
 

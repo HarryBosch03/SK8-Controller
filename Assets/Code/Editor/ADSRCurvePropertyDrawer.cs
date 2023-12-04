@@ -1,5 +1,5 @@
 ﻿using System.Net.NetworkInformation;
-using SK8Controller.Code.Maths;
+using SK8Controller.Maths;
 using UnityEditor;
 using UnityEngine;
 

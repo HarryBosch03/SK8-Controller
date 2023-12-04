@@ -1,17 +1,18 @@
-﻿using UnityEngine;
+﻿using SK8Controller.Player;
+using UnityEngine;
 
 [SelectionBase, DisallowMultipleComponent]
 public class ResetModifier : MonoBehaviour
 {
     [SerializeField] private float duration = 1.0f;
     
-    private PlayerController target;
+    private CarController target;
 
     private float timer;
     
     private void Awake()
     {
-        target = FindObjectOfType<PlayerController>();
+        target = FindObjectOfType<CarController>();
     }
 
     private void FixedUpdate()

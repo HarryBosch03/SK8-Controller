@@ -1,6 +1,6 @@
 using System;
 
-namespace SK8Controller.Code.Maths
+namespace SK8Controller.Maths
 {
     [Serializable]
     public class ADSRCurve
