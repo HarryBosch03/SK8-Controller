@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace SK8Controller.Generation
 {
@@ -9,11 +10,12 @@ namespace SK8Controller.Generation
     {
         public bool bakeTrack;
         public Mesh baseMesh;
-        public float cornerRadius = 30.0f;
+        public float trackWidth = 30.0f;
         public int cornerResolution = 16;
+        public bool closed;
 
         public List<(Vector3 point, Vector3 normal)> points = new();
-        
+
         private void OnValidate()
         {
             if (bakeTrack)
@@ -23,10 +25,10 @@ namespace SK8Controller.Generation
             }
         }
 
-        private void BakePoints()
+        private void BakePoints(bool drawGizmos = false)
         {
             this.points.Clear();
-            
+
             var points = new Transform[transform.childCount];
             for (var i = 0; i < points.Length; i++)
             {
@@ -38,36 +40,55 @@ namespace SK8Controller.Generation
                 var p0 = getPoint(i);
                 var p1 = getPoint(i + 1);
                 var p2 = getPoint(i + 2);
-                
+
                 var a = p0.position;
                 var b = p1.position;
                 var c = p2.position;
-                
+
                 var d0 = (b - a).normalized;
                 var d1 = (c - b).normalized;
 
-                var radius = cornerRadius * p1.transform.localScale.magnitude;
-                Gizmos.color = Color.magenta;
-                Gizmos.DrawRay(b, -d0 * 50.0f);
-                Gizmos.DrawRay(b, d1 * 50.0f);
-                var a0 = Mathf.Atan2(-d0.y, -d0.x);
-                var a1 = Mathf.Atan2(d1.y, d1.x);
-                var deltaA = Mathf.Abs(Mathf.DeltaAngle(a0 * Mathf.Rad2Deg, a1 * Mathf.Rad2Deg) * Mathf.Deg2Rad);
-                Debug.Log($"{a0}, {a1}, {deltaA}");
-                var offset = radius / Mathf.Tan(deltaA * 0.5f);
-                
+                var radius = p1.transform.localScale.magnitude;
+                var angle0 = Mathf.Atan2(-d0.z, -d0.x);
+                var angle1 = Mathf.Atan2(d1.z, d1.x);
+                var deltaAngle = Mathf.Abs(Mathf.DeltaAngle(angle0 * Mathf.Rad2Deg, angle1 * Mathf.Rad2Deg) * Mathf.Deg2Rad);
+                var offset = radius / Mathf.Tan(deltaAngle * 0.5f);
+
                 a += d0 * offset;
                 b -= d0 * offset;
                 c = p1.position + d1 * offset;
-                
-                this.points.Add((a, d0));
+
                 this.points.Add((b, d0));
 
-                // for (var j = 0; j < cornerResolution + 1; j++)
-                // {
-                //     this.points.Add(spline(b, p1.position, c, j));
-                // }
+                var tangent = new Vector3(-d0.z, d0.y, d0.x);
+                var flip = Vector3.Dot((c - a).normalized, tangent) < 0.0f;
+                if (flip) tangent *= -1.0f;
+
+                var center = b + tangent.normalized * radius;
+                if (drawGizmos)
+                {
+                    Gizmos.DrawLine(center, b);
+                    Gizmos.DrawLine(center, c);
+                }
+
+                d0 = (c - center).normalized;
+                d1 = (b - center).normalized;
+                
+                angle0 = Mathf.Atan2(d0.z, d0.x);
+                angle1 = Mathf.Atan2(d1.z, d1.x);
+                
+                for (var j = 0; j < cornerResolution; j++)
+                {
+                    var p = j / (cornerResolution - 1.0f);
+                    var angle = Mathf.LerpAngle(angle1 * Mathf.Rad2Deg, angle0 * Mathf.Rad2Deg, p) * Mathf.Deg2Rad;
+                    var v = new Vector3(Mathf.Cos(angle), 0.0f, Mathf.Sin(angle)) * radius;
+                    var t = new Vector3(-v.z, v.y, v.x) * (flip ? -1.0f : 1.0f);
+                    
+                    this.points.Add((center + v, t));
+                }
             }
+
+            if (closed) this.points.Add(this.points[0]);
 
             (Vector3 point, Vector3 tangent) spline(Vector3 p0, Vector3 p1, Vector3 p2, int i)
             {
@@ -80,22 +101,22 @@ namespace SK8Controller.Generation
 
                 var tangent = 1 * (-2 * p0 + 2 * p1) +
                               2 * t * (1 * p0 - 2 * p1 + 1 * p2);
-                
+
                 return (point, tangent);
             }
-            
+
             Transform getPoint(int i)
             {
                 var c = points.Length;
                 return points[(i % c + c) % c];
             }
         }
-        
-        
+
+
         private void BakeTrack()
         {
             BakePoints();
-            
+
             var meshFilter = GetComponent<MeshFilter>();
             if (!meshFilter) return;
 
@@ -115,7 +136,7 @@ namespace SK8Controller.Generation
             var uvs = new Vector2[points.Count * baseMesh.vertexCount];
             var indices = new int[points.Count * baseMesh.triangles.Length];
 
-            for (var i = 0; i < points.Count; i++)
+            for (var i = 0; i < points.Count - 1; i++)
             {
                 var (p0, t0) = getPoint(i);
                 var (p1, t1) = getPoint(i + 1);
@@ -123,17 +144,14 @@ namespace SK8Controller.Generation
                 appendSegment(p0, p1, t0, t1);
             }
 
+            mesh.Clear();
             mesh.SetVertices(vertices);
             mesh.SetNormals(normals);
             mesh.SetUVs(0, uvs);
             mesh.SetTriangles(indices, 0);
             mesh.RecalculateBounds();
 
-            (Vector3, Vector3) getPoint(int i)
-            {
-                var c = points.Count;
-                return points[(i % c + c) % c];
-            }
+            (Vector3, Vector3) getPoint(int i) => points[i];
 
             void appendSegment(Vector3 p0, Vector3 p1, Vector3 t0, Vector3 t1)
             {
@@ -162,18 +180,23 @@ namespace SK8Controller.Generation
                 segmentHead++;
             }
         }
-        
+
         private void OnDrawGizmos()
         {
-            BakePoints();
-            
-            var c = points.Count;
+            BakePoints(true);
+
             Gizmos.color = Color.yellow;
-            for (var i = 0; i < c; i++)
+            for (var i = 0; i < points.Count - 1; i++)
             {
-                var a = points[i].point;
-                var b = points[((i + 1) % c + c) % c].point;
-                Gizmos.DrawLine(a, b);
+                var (p0, n0) = points[i];
+                var (p1, n1) = points[i + 1];
+
+                var t0 = new Vector3(-n0.z, n0.y, n0.x);
+                var t1 = new Vector3(-n1.z, n1.y, n1.x);
+
+                Gizmos.DrawLine(p0, p1);
+                Gizmos.DrawLine(p0 + t0.normalized * trackWidth * 0.5f, p1 + t1.normalized * trackWidth * 0.5f);
+                Gizmos.DrawLine(p0 - t0.normalized * trackWidth * 0.5f, p1 - t1.normalized * trackWidth * 0.5f);
             }
         }
     }
