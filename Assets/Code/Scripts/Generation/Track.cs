@@ -127,6 +127,12 @@ namespace SK8Controller.Generation
                 meshFilter.sharedMesh = mesh;
             }
 
+            var collider = GetComponent<MeshCollider>();
+            if (collider)
+            {
+                collider.sharedMesh = mesh;
+            }
+
             mesh.name = "TrackMesh";
 
             var segmentHead = 0;
