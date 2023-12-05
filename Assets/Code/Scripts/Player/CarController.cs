@@ -1,32 +1,37 @@
 using SK8Controller.Config;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace SK8Controller.Player
 {
     public class CarController : MonoBehaviour
     {
         [SerializeField] private CarSettings settings;
-
-        [SerializeField] private InputAction throttleAction;
-        [SerializeField] private InputAction leanAction;
-        [SerializeField] private InputAction discreteTurnAction;
-        [SerializeField] private InputAction driftAction;
         [SerializeField] private Vector3 centerOfMass;
 
         [SerializeField] [Range(-1.0f, 1.0f)] private float rawSteerInput;
 
-        private Vector3 up;
-        private bool useMouse;
+        public Vector3 up;
+        public PlayerInputProvider inputProvider;
+        public PlayerInputData inputData;
         public int wheelsOnGround;
+        public bool isOnGround;
         private Wheel[] wheels = new Wheel[4];
 
         public Rigidbody Body { get; private set; }
-        public float Steer { get; private set; }
+        public float SteerAngle { get; private set; }
 
-        public float GetForwardSpeed() => Vector3.Dot(Body.velocity, transform.forward);
+        public event System.Action<Vector3> LandEvent;
 
-        private void Awake() { GetFromHierarchy(); }
+        public float GetForwardSpeed(bool abs = false)
+        {
+            var v = Vector3.Dot(Body.velocity, transform.forward);
+            return abs ? Mathf.Abs(v) : v;
+        }
+
+        private void Awake()
+        {
+            GetFromHierarchy();
+        }
 
         private void GetFromHierarchy()
         {
@@ -36,6 +41,8 @@ namespace SK8Controller.Player
             wheels[1] = transform.Find("Car/WheelAnchor.FR").GetComponent<Wheel>();
             wheels[2] = transform.Find("Car/WheelAnchor.BL").GetComponent<Wheel>();
             wheels[3] = transform.Find("Car/WheelAnchor.BR").GetComponent<Wheel>();
+
+            inputProvider = GetComponent<PlayerInputProvider>();
         }
 
         private void OnEnable()
@@ -47,45 +54,16 @@ namespace SK8Controller.Player
             }
 
             Cursor.lockState = CursorLockMode.Locked;
-
-            throttleAction.Enable();
-            leanAction.Enable();
-            discreteTurnAction.Enable();
         }
 
         private void OnDisable()
         {
             Cursor.lockState = CursorLockMode.None;
-
-            throttleAction.Disable();
-            leanAction.Disable();
-            discreteTurnAction.Disable();
         }
 
         private void Update()
         {
-            var mouse = Mouse.current;
-            var delta = mouse.delta.ReadValue();
-            var discreteTurn = discreteTurnAction.ReadValue<float>();
-
-            if (useMouse)
-            {
-                rawSteerInput += delta.x * settings.steerSensitivity;
-                rawSteerInput = Mathf.Clamp(rawSteerInput, -1.0f, 1.0f);
-
-                if (Mathf.Abs(discreteTurn) > 0.1f) useMouse = false;
-            }
-            else
-            {
-                rawSteerInput = discreteTurn;
-
-                if (delta.magnitude >= 0.5f) useMouse = true;
-            }
-
-            var steer = Mathf.Pow(Steer, settings.steerExponent * 2 + 1);
-
-            wheels[0].SteerAngle = Steer;
-            wheels[1].SteerAngle = Steer;
+            inputData = inputProvider.InputData;
         }
 
         public void ResetBoard()
@@ -100,8 +78,9 @@ namespace SK8Controller.Player
         private void FixedUpdate()
         {
             Body.centerOfMass = centerOfMass;
-
-            Steer += (rawSteerInput * settings.maxSteer - Steer) * (1.0f - settings.steerInputSmoothing);
+            
+            var steerAngle = Mathf.Lerp(settings.steerAngleMin, settings.steerAngleMax, GetForwardSpeed(true) / GetMaxSpeed());
+            SteerAngle += (inputData.steer * steerAngle - SteerAngle) * (1.0f - settings.steerInputSmoothing);
 
             wheelsOnGround = 0;
             var up = Vector3.zero;
@@ -113,14 +92,27 @@ namespace SK8Controller.Player
                 up += wheel.groundHit.normal;
             }
 
-            if (wheelsOnGround > 0)
+            var wasOnGround = isOnGround;
+            isOnGround = wheelsOnGround > 0;
+            
+            if (isOnGround)
             {
                 this.up = up.normalized;
+                if (!wasOnGround)
+                {
+                    var velocity = Body.velocity;
+                    velocity -= transform.forward * Vector3.Dot(velocity, transform.forward);
+                    
+                    LandEvent?.Invoke(velocity);
+                }
             }
 
             ApplyPushForce();
             ApplyDownForce();
             ApplyGravity();
+            
+            wheels[0].SteerAngle = SteerAngle;
+            wheels[1].SteerAngle = SteerAngle;
         }
 
         private void ApplyGravity()
@@ -141,8 +133,8 @@ namespace SK8Controller.Player
         private void ApplyPushForce()
         {
             var forwardSpeed = Vector3.Dot(transform.forward, Body.velocity);
-            var throttle = throttleAction.ReadValue<float>();
-            var target = Mathf.Sign(throttle) * settings.maxSpeed;
+            var throttle = inputData.throttle;
+            var target = Mathf.Sign(throttle) * GetMaxSpeed();
             throttle = Mathf.Abs(throttle);
 
             var force = (target - forwardSpeed) * settings.acceleration * throttle;
@@ -150,6 +142,12 @@ namespace SK8Controller.Player
             wheels[3].DriveForce = force;
         }
 
+        public float GetMaxSpeed()
+        {
+            var throttle = inputData.throttle;
+            return throttle > float.Epsilon ? settings.maxForwardSpeed : settings.maxReverseSpeed;
+        }
+        
         private void OnDrawGizmos()
         {
             Gizmos.color = Color.green;

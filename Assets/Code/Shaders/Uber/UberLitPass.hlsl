@@ -54,22 +54,48 @@ void ApplyDecal(Varyings input, inout Surface surface)
     ApplyDecalToBaseColor(input.vertex, surface.albedo);
 }
 
-half2 CalcUV(Varyings varyings, float4 tex_st)
+Varyings CalcTriplanar(Varyings input, float4 tex_st)
 {
-    float3 weights = abs(varyings.normalWS);
-    return lerp
+    float3 weights = abs(input.normalWS);
+    float mx = max(weights.x, max(weights.y, weights.z));
+    if (weights.x == mx) weights = float3(1.0, 0.0, 0.0);
+    else if (weights.y == mx) weights = float3(0.0, 1.0, 0.0);
+    else weights = float3(0.0, 0.0, 1.0);
+
+    
+    input.uv = lerp
     (
-        varyings.uv,
-        varyings.positionWS.zy * weights.x +
-        varyings.positionWS.xz * weights.y +
-        varyings.positionWS.xy * weights.z,
+        input.uv,
+        input.positionWS.zy * weights.x +
+        input.positionWS.xz * weights.y +
+        input.positionWS.xy * weights.z,
         _Triplanar
     ) * tex_st.xy + tex_st.zw;
+
+    input.tangentWS = lerp
+    (
+        input.tangentWS,
+        normalize
+        (
+            float3(0.0, 0.0, 1.0) * weights.x +
+            float3(0.0, 0.0, 1.0) * weights.y +
+            float3(1.0, 0.0, 0.0) * weights.z
+        ),
+        _Triplanar
+    );
+
+    return input;
 }
 
-half4 SampleTexture(TEXTURE2D_PARAM(tex, sampler_tex), float4 tex_st, Varyings varyings)
+half4 SampleTexture(TEXTURE2D_PARAM(tex, sampler_tex), float4 tex_st, Varyings input)
 {
-    return SAMPLE_TEXTURE2D(tex, sampler_tex, CalcUV(varyings, tex_st));
+    return SAMPLE_TEXTURE2D(tex, sampler_tex, input.uv);
+}
+
+float3 CalcNormal(Varyings input)
+{
+    float3 normalTS = UnpackNormalScale(SampleTexture(_NormalMap, sampler_NormalMap, _NormalMap_ST, input), _NormalStrength);
+    return TransformTangentToWorld(normalTS, CreateTangentToWorld(input.normalWS, input.tangentWS, 1.0f));
 }
 
 Surface InitSurface(Varyings input)
@@ -79,13 +105,11 @@ Surface InitSurface(Varyings input)
     half4 col = _BaseColor * input.color * SampleTexture(_MainTex, sampler_MainTex, _MainTex_ST, input);
     res.albedo = col.rgb;
     res.alpha = col.a;
+    res.normal = input.normalWS;
     res.light = normalize(_MainLightPosition);
 
-    float3 normalTS = UnpackNormalScale(SampleTexture(_NormalMap, sampler_NormalMap, _NormalMap_ST, input), _NormalStrength);
-    res.normal = TransformTangentToWorld(normalTS, CreateTangentToWorld(input.normalWS, input.tangentWS, 1.0f));
-    
     ApplyDecal(input, res);
-    
+
     return res;
 }
 
@@ -99,7 +123,7 @@ Lighting CalcLighting(Varyings input, Surface surface)
 {
     Lighting lighting;
     lighting.ambient = float4(0.1, 0.1, 0.1, 1.0);
-    
+
     lighting.color = _MainLightColor * (CalcAttenuation(input, surface) * 0.5 + 0.5);
     lighting.specular = 0.0;
 
@@ -109,7 +133,7 @@ Lighting CalcLighting(Varyings input, Surface surface)
         Light light = GetAdditionalLight(lightIndex, input.positionWS);
         lighting.color += light.color * light.distanceAttenuation;
     }
-    
+
     return lighting;
 }
 
@@ -117,12 +141,16 @@ half4 frag(Varyings input) : SV_Target
 {
     input.normalWS = normalize(input.normalWS);
     input.tangentWS = normalize(input.tangentWS);
-    
+
+    input = CalcTriplanar(input, _MainTex_ST);
+
+    input.normalWS = CalcNormal(input);
+
     // Calculate Surface Data
     Surface surface = InitSurface(input);
 
     Lighting lighting = CalcLighting(input, surface);
-    
+
     // Init Final Color
     half4 color = 0.0;
 
@@ -131,6 +159,6 @@ half4 frag(Varyings input) : SV_Target
     color.a = surface.alpha;
 
     color += _EmissiveColor * input.color * _Brightness;
-    
+
     return color;
 }

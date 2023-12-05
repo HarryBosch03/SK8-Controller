@@ -16,17 +16,26 @@
                 },
                 {
                     "name": "Lean",
-                    "type": "Button",
+                    "type": "Value",
                     "id": "a768798b-3ad5-474f-beae-ca6fccadf987",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Steer",
+                    "type": "Button",
+                    "id": "782067b6-31b8-4a38-bb40-0819df16d3ed",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Steer",
+                    "name": "Drift",
                     "type": "Button",
-                    "id": "782067b6-31b8-4a38-bb40-0819df16d3ed",
+                    "id": "72e46753-aedd-49a3-9d5a-b97d430b5ca1",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -113,12 +122,78 @@
                 },
                 {
                     "name": "",
+                    "id": "629acd4b-7f07-4a63-9d47-9812b08e0476",
+                    "path": "<Mouse>/delta",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Lean",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "66b1ba5f-c771-4dc0-aa81-ae4f510a7f1c",
                     "path": "<Gamepad>/leftStick/x",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
                     "action": "Steer",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "Keyboard",
+                    "id": "72d9cf24-51fa-48e4-a05b-93268190bcab",
+                    "path": "1DAxis",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Steer",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "negative",
+                    "id": "60350efa-fd50-4f6d-ad97-a97af622c13b",
+                    "path": "<Keyboard>/a",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Steer",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "positive",
+                    "id": "99cb90a5-218a-4b6d-a18a-7b39de65136c",
+                    "path": "<Keyboard>/d",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Steer",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "ce344ec8-2e5d-4dc1-9197-1491ec1d42bd",
+                    "path": "<Keyboard>/space",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Drift",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "84d00f2a-5a05-4fd7-a754-33f4c35bf96e",
+                    "path": "<Gamepad>/leftTrigger",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Drift",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

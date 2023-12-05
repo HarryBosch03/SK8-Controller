@@ -12,11 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6e953143b5c4d2b935f1ccda446545a, type: 3}
   m_Name: Car Settings
   m_EditorClassIdentifier: 
-  steerSensitivity: 0.01
+  steerSensitivity: 1
   steerExponent: 0
-  maxSteer: 4
+  steerAngleMin: 20
+  steerAngleMax: 2
   steerInputSmoothing: 0.6
   acceleration: 0.5
-  maxSpeed: 80
+  maxForwardSpeed: 80
+  maxReverseSpeed: 20
   downforce: 2
   gravityScale: 3
