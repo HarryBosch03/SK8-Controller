@@ -14,6 +14,7 @@ namespace SK8Controller.Player
         public float mouseSteerAngle;
 
         public InputDevice device;
+        public int playerId;
 
         private InputActionReference throttle;
         private InputActionReference lean;
@@ -67,8 +68,9 @@ namespace SK8Controller.Player
             Destroy(inputAsset);
         }
 
-        public void BindToDevice(InputDevice device)
+        public void BindToDevice(int playerId, InputDevice device)
         {
+            this.playerId = playerId;
             this.device = device;
             inputAsset.devices = new[] { device };
             useMouse = device is Keyboard;

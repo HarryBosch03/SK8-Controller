@@ -23,6 +23,11 @@ namespace SK8Controller.Generation
                 bakeTrack = false;
                 BakeTrack();
             }
+
+            for (var i = 0; i < transform.childCount; i++)
+            {
+                transform.GetChild(i).gameObject.name = $"TrackPoint.{i + 1}";
+            }
         }
 
         private void BakePoints(bool drawGizmos = false)
