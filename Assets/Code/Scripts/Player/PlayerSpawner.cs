@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.ComponentModel.Design.Serialization;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -64,6 +63,9 @@ namespace SK8Controller.Player
             {
                 Gizmos.DrawSphere(GetSpawnPoint(i), 0.2f);
             }
+            
+            Gizmos.DrawRay(transform.position, Vector3.up * 10.0f);
+            Gizmos.DrawSphere(transform.position, 1.0f);
         }
     }
 }

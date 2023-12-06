@@ -1,21 +1,35 @@
+using System;
+using System.Collections.Generic;
 using SK8Controller.Config;
+using SK8Controller.Utilities;
 using UnityEngine;
 
 namespace SK8Controller.Player
 {
     public class CarController : MonoBehaviour
     {
-        [SerializeField] private CarSettings settings;
-        [SerializeField] private Vector3 centerOfMass;
+        public CarSettings settings;
+        public Vector3 centerOfMass;
 
-        [SerializeField] [Range(-1.0f, 1.0f)] private float rawSteerInput;
+        [Range(0.0f, 1.0f)]
+        public float friction;
 
-        public Vector3 up;
-        public PlayerInputProvider inputProvider;
-        public PlayerInputData inputData;
-        public int wheelsOnGround;
-        public bool isOnGround;
-        private Wheel[] wheels = new Wheel[4];
+        [HideInInspector] public Vector3 up;
+        private PlayerInputProvider inputProvider;
+        private PlayerInputData inputData;
+        [HideInInspector] public bool isOnGround;
+        private Transform model;
+
+        private ParticleSystem[] driftParticles;
+        private ParticleSystem[] driftBoostParticles;
+        private ParticleSystem boostLines;
+
+        private float driftBoostTimer;
+        private float boostTimer;
+        private float boostScalar;
+
+        private int driftSign;
+        private bool IsDrifting => driftSign != 0;
 
         public Rigidbody Body { get; private set; }
         public float SteerAngle { get; private set; }
@@ -28,21 +42,29 @@ namespace SK8Controller.Player
             return abs ? Mathf.Abs(v) : v;
         }
 
-        private void Awake()
-        {
-            GetFromHierarchy();
-        }
+        private void Awake() { GetFromHierarchy(); }
 
         private void GetFromHierarchy()
         {
             if (!Body) Body = GetComponent<Rigidbody>();
 
-            wheels[0] = transform.Find("Car/WheelAnchor.FL").GetComponent<Wheel>();
-            wheels[1] = transform.Find("Car/WheelAnchor.FR").GetComponent<Wheel>();
-            wheels[2] = transform.Find("Car/WheelAnchor.BL").GetComponent<Wheel>();
-            wheels[3] = transform.Find("Car/WheelAnchor.BR").GetComponent<Wheel>();
-
+            model = transform.Find("Model");
             inputProvider = GetComponent<PlayerInputProvider>();
+
+            driftParticles = new[]
+            {
+                transform.Find<ParticleSystem>("DriftFX.L/Smoke"),
+                transform.Find<ParticleSystem>("DriftFX.R/Smoke"),
+            };
+
+            driftBoostParticles = new[]
+            {
+                transform.Find<ParticleSystem>("DriftFX.L/Sparks"),
+                transform.Find<ParticleSystem>("DriftFX.R/Sparks"),
+            };
+
+            boostLines = transform.Find<ParticleSystem>("BoostLines");
+            boostLines.Stop(false, ParticleSystemStopBehavior.StopEmitting);
         }
 
         private void OnEnable()
@@ -53,66 +75,145 @@ namespace SK8Controller.Player
                 return;
             }
 
+            up = transform.up;
+
             Cursor.lockState = CursorLockMode.Locked;
         }
 
-        private void OnDisable()
-        {
-            Cursor.lockState = CursorLockMode.None;
-        }
+        private void OnDisable() { Cursor.lockState = CursorLockMode.None; }
 
         private void Update()
         {
             inputData = inputProvider.InputData;
-        }
 
-        public void ResetBoard()
-        {
-            Body.position = Vector3.up * 0.5f;
-            Body.rotation = Quaternion.identity;
+            var roll = Vector3.Dot(transform.up, Body.angularVelocity) * settings.turnRoll;
+            model.transform.localRotation = Quaternion.Euler(Vector3.forward * roll);
 
-            Body.velocity = Vector3.zero;
-            Body.angularVelocity = Vector3.zero;
+            if (inputData.drift)
+            {
+                if (!IsDrifting && Mathf.Abs(inputData.steer) > 0.1f)
+                {
+                    driftSign = inputData.steer > 0.0f ? 1 : -1;
+                }
+            }
+            else
+            {
+                driftSign = 0;
+            }
+
+            if (IsDrifting)
+            {
+                if (inputData.steer * driftSign < 0.0f) inputData.steer = 0.0f;
+            }
+            
+            UpdateDriftFX();
         }
 
         private void FixedUpdate()
         {
             Body.centerOfMass = centerOfMass;
-            
+
             var steerAngle = Mathf.Lerp(settings.steerAngleMin, settings.steerAngleMax, GetForwardSpeed(true) / GetMaxSpeed());
             SteerAngle += (inputData.steer * steerAngle - SteerAngle) * (1.0f - settings.steerInputSmoothing);
 
-            wheelsOnGround = 0;
-            var up = Vector3.zero;
-            foreach (var wheel in wheels)
-            {
-                if (!wheel.isOnGround) continue;
+            Drift();
+            CheckForGround();
+            ApplyDriveForce();
+            ApplyTorque();
+            ApplyFriction();
+            ApplyGravity();
+        }
 
-                wheelsOnGround++;
-                up += wheel.groundHit.normal;
+        private void Drift()
+        {
+            if (IsDrifting)
+            {
+                if (GetForwardSpeed() / settings.maxForwardSpeed < 0.1f) driftSign = 0;
             }
 
-            var wasOnGround = isOnGround;
-            isOnGround = wheelsOnGround > 0;
-            
-            if (isOnGround)
+            if (IsDrifting)
             {
-                this.up = up.normalized;
-                if (!wasOnGround)
+                driftBoostTimer += Time.deltaTime * Mathf.Abs(inputData.steer);
+            }
+            else if (driftBoostTimer > 0.0f)
+            {
+                if (driftBoostTimer >= settings.driftTimeForBoost)
                 {
-                    var velocity = Body.velocity;
-                    velocity -= transform.forward * Vector3.Dot(velocity, transform.forward);
-                    
-                    LandEvent?.Invoke(velocity);
+                    boostScalar = Mathf.Max(boostScalar, settings.driftBoostPower);
+                    boostTimer = Mathf.Max(boostTimer, settings.driftBoostDuration);
+                }
+
+                driftBoostTimer = 0.0f;
+            }
+        }
+
+        private void UpdateDriftFX()
+        {
+            foreach (var e in driftParticles)
+            {
+                if (IsDrifting != e.isEmitting)
+                {
+                    if (IsDrifting) e.Play();
+                    else e.Stop();
                 }
             }
 
-            ApplyPushForce();
-            ApplyDownForce();
-            ApplyGravity();
-            
-            wheels[0].SteerAngle = SteerAngle;
-            wheels[1].SteerAngle = SteerAngle;
+            var boostCharged = driftBoostTimer > settings.driftTimeForBoost && IsDrifting;
+            foreach (var e in driftBoostParticles)
+            {
+                if (boostCharged != e.isEmitting)
+                {
+                    if (!e.isEmitting) e.Play();
+                    else e.Stop();
+                }
+            }
+
+            if (boostTimer > 0.0f != boostLines.isEmitting)
+            {
+                if (!boostLines.isEmitting) boostLines.Play();
+                else boostLines.Stop();
+            }
+        }
+
+        private void ApplyTorque()
+        {
+            if (!isOnGround) return;
+
+            Body.angularVelocity = transform.up * SteerAngle * Mathf.Deg2Rad * GetForwardSpeed() / settings.maxForwardSpeed;
+        }
+
+        private void CheckForGround()
+        {
+            var ray = new Ray(Body.position + up, -up);
+            var hits = Physics.RaycastAll(ray, 1.0f + settings.castExtension);
+
+            isOnGround = false;
+            foreach (var hit in hits)
+            {
+                if (hit.collider.transform.IsChildOf(transform)) continue;
+
+                isOnGround = true;
+                up = hit.normal;
+
+                var fwd = Vector3.Cross(transform.right, up).normalized;
+                var rotation = Quaternion.LookRotation(fwd, up);
+
+                Body.rotation = Quaternion.Slerp(rotation, Body.rotation, settings.rotationSmoothing);
+                Body.position += Vector3.Project(hit.point - Body.position, hit.normal);
+                Body.velocity += Vector3.Project(-Body.velocity, hit.normal);
+                break;
+            }
+        }
+
+        private void ApplyFriction()
+        {
+            if (!isOnGround) return;
+
+            var tFriction = IsDrifting ? settings.driftFriction : settings.friction;
+            friction = Mathf.Lerp(tFriction, friction, settings.frictionSmoothing);
+
+            var force = Vector3.Project(-Body.velocity, transform.right) * friction;
+            Body.velocity += force;
         }
 
         private void ApplyGravity()
@@ -122,24 +223,20 @@ namespace SK8Controller.Player
             Body.AddForce(Physics.gravity * (settings.gravityScale - 1.0f), ForceMode.Acceleration);
         }
 
-        private void ApplyDownForce()
+        private void ApplyDriveForce()
         {
-            if (wheelsOnGround < 4) return;
+            if (!isOnGround) return;
 
-            var fwdSpeed = Mathf.Abs(GetForwardSpeed());
-            Body.AddForce(-transform.up * settings.downforce * fwdSpeed);
-        }
-
-        private void ApplyPushForce()
-        {
-            var forwardSpeed = Vector3.Dot(transform.forward, Body.velocity);
             var throttle = inputData.throttle;
-            var target = Mathf.Sign(throttle) * GetMaxSpeed();
-            throttle = Mathf.Abs(throttle);
+            if (boostTimer > 0.0f) throttle = boostScalar;
 
-            var force = (target - forwardSpeed) * settings.acceleration * throttle;
-            wheels[2].DriveForce = force;
-            wheels[3].DriveForce = force;
+            var target = throttle * GetMaxSpeed();
+
+            var force = (target - GetForwardSpeed()) * settings.acceleration;
+            if (boostTimer > 0.0f) force *= boostScalar;
+            Body.AddForce(transform.forward * force);
+
+            boostTimer -= Time.deltaTime;
         }
 
         public float GetMaxSpeed()
@@ -147,12 +244,17 @@ namespace SK8Controller.Player
             var throttle = inputData.throttle;
             return throttle > float.Epsilon ? settings.maxForwardSpeed : settings.maxReverseSpeed;
         }
-        
+
         private void OnDrawGizmos()
         {
             Gizmos.color = Color.green;
             Gizmos.matrix = transform.localToWorldMatrix;
             Gizmos.DrawSphere(centerOfMass, 0.02f);
+        }
+
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (IsDrifting) driftSign = 0;
         }
     }
 }
